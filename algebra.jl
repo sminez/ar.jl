@@ -12,6 +12,14 @@ performed is allowed to vary.
 =#
 import Base.*, Base.<=, Base.==, Base.show
 
+####################
+# .: Paramaters :. #
+####################
+const allowed = ["p","0","1","2","3","10","20","30", "23",
+                 "31","12","023","031","012", "123","0123"]
+const targets = Dict([(Set(a), a) for a in allowed])
+const unit_ordering = Dict("1" => "2", "2" => "3", "3" => "1")
+const αp_squares =  ["0", "10", "20", "30", "123"]
 
 #######################
 # .: Unit Elements :. #
@@ -45,11 +53,6 @@ type α <: alpha
 
     "Confirm that index is actually valid"
     function α(index::String)
-        allowed = [
-            "p","0","1","2","3","10","20","30",
-            "23","31","12","023","031","012",
-            "123","0123"
-        ]
         if index[1] == '-'
             val = index[2:end]
         else
@@ -76,40 +79,23 @@ end
 #########################
 # .: Functions on αs :. #
 #########################
-"Check that unit_elements are correctly ordered"
 function <=(i::unit_element, j::unit_element)
-    d = Dict("1" => "2", "2" => "3", "3" => "1")
     if i.index == j.index
         return true
     elseif i.index == "0"
         return true
     elseif j.index == "0"
         return false
-    elseif d[i.index] == j.index
+    # See the Paramaters section at the top of the file
+    elseif unit_ordering[i.index] == j.index
         return true
     else
         return false
     end
 end
 
-function ==(i::unit_element, j::unit_element)
+function ==(i::alpha, j::alpha)
     i.index == j.index
-end
-
-"Multiplication of single index αs"
-function *(i::unit_element, j::unit_element)
-    if i.index == "0"
-        return α("-" * j.index * "0")
-    elseif j.index == "0"
-        return α(i.index * "0")
-    else
-        # NOTE:: > is overloaded to give the correct ordering here
-        if i < j
-            return α(i.index * j.index)
-        else
-            return α("-" * j.index * i.index)
-        end
-    end
 end
 
 "Compute the product of two αs in the algebra"
@@ -128,15 +114,9 @@ function *(i::alpha, j::alpha)
     (2iii) α^2 == +-αp
         "All elements square to either +αp or -αp"
     (3)   αμν == -ανμ
-        "Adjacent indices can be poppped by negating."
-
-    In addition to this, I am using a simple lookup table to simplify the
-    squaring of elements as all square to either αp or -αp.
+        "Adjacent indices can be popped by negating."
     =#
-    print(i)
-    println(j)
-
-    # Rule (1) :: Multiplication by r-point
+    # Rule (1) :: Multiplication by αp
     if contains(i.index, "p")
         if contains(i.index, "-")
             return α("-" * j.index)
@@ -151,85 +131,103 @@ function *(i::alpha, j::alpha)
         end
     end
 
-    # Rule (2) :: Squaring
+    # Rule (2) :: Squaring and popping
     if i.index == j.index
-        if i.index in ["0", "10", "20", "30", "123"]
+        if i.index in αp_squares
             return α("p")
         else
             return α("-p")
         end
     end
 
-    components = append!([c for c in i.index], [c for c in j.index])
+    #components = append!([c for c in i.index], [c for c in j.index])
+    components = i.index * j.index
     intersection = intersect(Set(i.index), Set(j.index))
 
     # Determine if the initial product is +ve or -ve
     if ('-' in components) && ~('-' in intersection)
-        # Either i or j is negative
+        # One of i or j is negative
         negate = true
     else
         # Both i and j are negative or neither is
         negate = false
     end
 
-    # Rule (3) :: Sorting of elements via bubble sort to track pops
-    units = [unit_element(c) for c in components]
-    needed_pops = true
-
-    while needed_pops
-        needed_pops = false
-        for (i, unit) in enumerate(units[1:length(units)-1])
-            if unit <= units[i+1]
-                # Cancel repeated indices
-                if unit == units[i+1]
-                    filter!(μ -> μ != unit, units)
-                    if unit.index > 0
-                        negate = ~negate
-                    end
-                    needed_pops = true
-                end
-                break
-            else
-                # Bubble sort into the correct place and track pops
-                while ~(units[i] <= units[i+1])
-                    units[i:i+1] = units[i+1:-1:i]
-                    needed_pops = true
-                    negate = ~negate
-                    i = i + 1
-                    if i == length(units)
-                        if units[end] == unit_element("1") && length(units) > 2
-                            # NOTE:: This breaks the cycle of 123123...
-                            units[i-1:i] = units[i:-1:i-1]
-                        end
-                        break
-                    end
-                end
-            end
+    # Remove duplicate indices and handle negation from associated pops
+    for repeated in intersection
+        # NOTE:: .<operator> is array broadcast syntax
+        first, second = find([c for c in components] .== repeated)
+        # Distance - 1 as we only need to get adjacent to the first occurance
+        n_pops = second - first - 1
+        if n_pops % 2 == 1
+            # Only a total odd number of pops will negate
+            negate = ~negate
         end
+        filtered = filter(μ -> μ != repeated, [c for c in components])
+        components = String(filtered)
     end
 
-    product = join([u.index for u in units])
-
-    # Deal with αi0 elements
-    if length(product) == 2 && product[1] == '0'
-        product = reverse(product)
+    # Rule (3) :: Sorting of elements via bubble sort to track pops
+    target = targets[Set(components)]
+    # Convert the components into an array of ints so we can sort easier
+    ordering = Dict([(c,i) for (i,c) in enumerate(target)])
+    current = [ordering[c] for c in components]
+    _, n_pops = count_pops(current)
+    if n_pops % 2 == 1
         negate = ~negate
     end
+
     # Deal with negation
     if negate
-        return α("-" * product)
+        return α("-" * target)
     else
-        return α(product)
+        return α(target)
     end
 end
 
 
-# .: Generate Caley Table :. #
-allowed = [
-    "p","0","1","2","3","10","20","30",
-    "23","31","12","023","031","012",
-    "123","0123"
-]
+"Count the number of pops required to sort a source array into ascending order"
+function count_pops(source::Array{Int, 1})
+    # NOTE:: This is just recursive merge sort but keeping track of the pops
+    # Base case
+    if length(source) == 1
+        return (source, 0)
+    end
+    # Split
+    mid = div(length(source), 2)
+    left = source[1:mid]
+    right = source[mid+1:end]
+    # Recurse
+    sorted_left, left_pops = count_pops(left)
+    sorted_right, right_pops = count_pops(right)
+    # Merge
+    i, j = 1, 1
+    total_pops = left_pops + right_pops
+    merged = []
+    while (i < length(sorted_left)) && (j < length(sorted_right))
+        # Taking from the left if both are equal
+        if sorted_left[i] <= sorted_right[j]
+            append!(merged, sorted_left[i])
+            i += 1
+        else
+            append!(merged, sorted_right[j])
+            j += 1
+            total_pops += (length(sorted_left) - i)
+        end
+    end
+    if i == length(sorted_left)
+        append!(merged, sorted_right[j:end])
+    elseif j == length(sorted_right)
+        append!(merged, sorted_left[i:end])
+    end
+    return merged, total_pops
+end
 
+
+##############################
+# .: Generate Caley Table :. #
+##############################
 caley = [[α(i) * α(j) for j in allowed] for i in allowed]
-print(caley)
+for c in caley
+    println(c)
+end
