@@ -28,7 +28,7 @@ manipulations of elements in the algebra.
 (3)   αμν == -ανμ
     "Adjacent indices can be popped by negating."
 =#
-import Base.*, Base.==, Base.show
+import Base.*, Base./, Base.\, Base.==, Base.show
 
 
 ####################
@@ -37,14 +37,13 @@ import Base.*, Base.==, Base.show
 const allowed = ["p","0","1","2","3","10","20","30","23",
                  "31","12","023","031","012","123","0123"]
 const targets = Dict([(Set(a), a) for a in allowed])
-const αp_squares =  ["0", "10", "20", "30", "123"]
 
 #######################
 # .: Unit Elements :. #
 #######################
 abstract alpha
 
-"One of the 16 unit element of the algebra"
+"""One of the 16 unit element of the algebra listed in `allowed`"""
 type α <: alpha
     index::String
     sign::Int8
@@ -64,11 +63,11 @@ type α <: alpha
     end
 end
 
-"Pretty print αs when working in the REPL"
-function show(io::IO, a::alpha)
-    str = (a.sign > 0 ? "" : "-") * "α" * a.index
-    print(io, str)
-end
+"""Pretty print αs when working in the REPL"""
+show(io::IO, a::alpha) = print(io, (a.sign > 0 ? "" : "-") * "α" * a.index)
+
+"""αs are equal if their indices and signs are equal"""
+==(i::alpha, j::alpha) = i.index == j.index && i.sign == j.sign
 
 ################################
 # .: Vectors and components :. #
@@ -80,58 +79,42 @@ typealias Ξ Vector{AR_pair}
 typealias xi Ξ
 
 
-#########################
-# .: Functions on αs :. #
-#########################
-function ==(i::alpha, j::alpha)
-    i.index == j.index && i.sign == j.sign
-end
-
-"""Compute the product of two αs in the algebra by first checking for special
+##########################
+# .: Operations on αs :. #
+##########################
+"""Pre-compute the product of two αs in the algebra by first checking for special
 case such as multiplication by αp and squaring and then using the set of rules
 defined above to pop and eliminate indices in order to determine the final
 product.
 NOTE:: The implementation of this is based on the paramaters at the top of this
        file (algebra.jl). These can be modified in order to change the algebra
-       and see how the resulting equations are affected.
-       The choice of division by or division into is made in differntial.jl
-       as this is implemented as a flag on the division implementations there"""
-function *(i::alpha, j::alpha)
-    # Rule (1) :: Multiplication by αp
-    if contains(i.index, "p")
-        return α(j.index, (i.sign * j.sign))
-    elseif contains(j.index, "p")
-        return α(i.index, (i.sign * j.sign))
-    end
+       and see how the resulting equations are affected."""
+function find_prod(i::alpha, j::alpha)
+    # Rule (1) :: Multiplication by αp is idempotent
+    i.index == "p" && return α(j.index, (i.sign * j.sign))
+    j.index == "p" && return α(i.index, (i.sign * j.sign))
 
     # Rule (2) :: Squaring and popping
-    if i.index == j.index
-        sign = (i.index in αp_squares) ? 1 : -1
-        return α("p", sign * i.sign * j.sign)
-    end
-
     components = i.index * j.index
     intersection = intersect(Set(i.index), Set(j.index))
 
-    # Determine if the initial sign is +ve or -ve
+    # Determine if the sign of the initial product is +ve or -ve
     sign = i.sign * j.sign
 
-    # Remove duplicate indices and handle negation from associated pops
     for repeated in intersection
         first, second = find([c for c in components] .== repeated)
         # Distance - 1 as we only need to get adjacent to the first occurance
         n_pops = second - first - 1
-        if n_pops % 2 == 1
-            # Only a total odd number of pops will negate
-            sign *= -1
-        end
-        if repeated != '0'
-            # Cancelling α0 is idempotend, cancelling αi negates
-            sign *= -1
-        end
-        filtered = filter(μ -> μ != repeated, [c for c in components])
-        components = String(filtered)
+        # Only a total odd number of pops will negate
+        sign *= (n_pops % 2 == 1 ? -1 : 1)
+        # Cancelling α0 is idempotent, cancelling αi negates
+        sign *= (repeated != '0' ? -1 : 1)
+        # Remove the duplicate elements
+        components = String(filter(μ -> μ != repeated, [c for c in components]))
     end
+
+    # If everything cancelled then i == j and we are left with αp (r-point)
+    length(components) == 0 && return α("p", sign)
 
     # Rule (3) :: Sorting of elements via bubble sort to track pops
     target = targets[Set(components)]
@@ -199,22 +182,52 @@ function count_pops(source::Array{Int, 1})
     return merged, total_pops
 end
 
-#################################
-# .: Generate a Cayley Table :. #
-#################################
+#################################################################
+# .: The pre-computed Cayley table and associated operations :. #
+#################################################################
+# .' is the transposition operator as multi-arrays in Julia are column major...
+const cayley = [find_prod(α(i), α(j)) for j in allowed, i in allowed].'
+
+"""Helper to quickly find an α in the Cayley table"""
+ix(a::α) = find(μ -> μ == a.index, allowed)
+
+"""Lookup in the Cayley table and determine the new sign"""
+function *(i::α, j::α)
+    prod = cayley[ix(i),ix(j)][1]
+    prod.sign *= i.sign * j.sign
+    return prod
+end
+
+"""Find the inverse of the first argument and then multiply"""
+function /(i::α, j::α)
+    i_inverse = α(i.index, (i * i).sign * i.sign)
+    return i_inverse * j
+end
+
+"""Find the inverse of the second argument and then multiply"""
+function \(i::α, j::α)
+    j_inverse = α(j.index, (j * j).sign * j.sign)
+    return i * j_inverse
+end
+
+################################
+# .: Viewing a Cayley Table :. #
+################################
 #=  This is a quick and dirty way to print out the Cayley table in
     a couple of different ways so that it can be pasted into excel
     for visualising and looking at properties such as sign and symmetry.
 =#
-cayley = [[α(i) * α(j) for j in allowed] for i in allowed]
-s = join(cayley[1], ",")
+s = join(cayley[1,:], ",")
 println(",$s")
-for c in cayley
+for i in 1:16
+    c = cayley[i,:]
     print("$(c[1]),")
-    # Indices only for quick colour scale view
-    println(join([find(x -> x == a.index, allowed)[1] for a in c], ","))
     # String indices
-    #println(join([a.index for a in c], ","))
+    println(join([a for a in c], ","))
+    # String indices
+    # println(join([a.index for a in c], ","))
+    # Indices only for quick colour scale view
+    #println(join([find(x -> x == a.index, allowed)[1] for a in c], ","))
     # Sign
-    #println(join([a.sign for a in c], ","))
+    # println(join([a.sign for a in c], ","))
 end
