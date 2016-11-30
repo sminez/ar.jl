@@ -9,20 +9,19 @@ using algebra
 
 
 "Numeric Partial derivative of vec with respect to component var"
-function ∂(vec::Ξμ, var::Int)
+function ∂(vec::Ξ, var::Int)
     throw("Not yet implemented!")
 end
 
 "3-vector ∇"
-function ∇(vec::Ξμ)
+function ∇(vec::Ξ)
     throw("Not yet implemented!")
 end
 
 
-"D4Ξ4 = α0∂0 - α1∂1 - α2∂2 - α3∂3"
-function Dμ(vec::Ξμ)
+"DμΞ4 = α0∂0Ξ4 - α1∂1Ξ4 - α2∂2Ξ4 - α3∂3Ξ4"
+function Dμ(vec::Ξ)
     t = ∂(vec, 0)
     x, y, z = ∇i(vec)
-    return Ξμ(t, -x, -y, -z)
+    return Ξ(t, -x, -y, -z)
 end
-
