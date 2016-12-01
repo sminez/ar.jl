@@ -28,7 +28,7 @@ manipulations of elements in the algebra.
 (3)   αμν == -ανμ
     "Adjacent indices can be popped by negating."
 =#
-import Base.*, Base./, Base.\, Base.==, Base.show
+import Base.+, Base.-, Base.*, Base./, Base.\, Base.==, Base.show
 
 
 ####################
@@ -74,6 +74,15 @@ show(io::IO, a::alpha) = print(io, (a.sign > 0 ? "" : "-") * "α" * a.index)
 ################################
 # .: Vectors and components :. #
 ################################
+#=
+    NOTE:: While αs are allowed to have either sign, when they are bound as
+    part of an AR_pair their sign information is transferred to the paramater
+    they are paired with in order to simplify implementations of calculations
+    and improve performance.
+
+    As these operations require manipulation of α values, they are defined at
+    the bottom of the file after the generation of the Cayley table.
+=#
 typealias AR_pair Tuple{Any,alpha}
 
 typealias ξα Tuple{Real,alpha}
@@ -81,7 +90,6 @@ typealias xi_component ξα
 
 typealias Ξ Vector{AR_pair}
 typealias xi Ξ
-
 
 
 ##########################
@@ -161,15 +169,20 @@ end
 #################################################################
 # .: The pre-computed Cayley table and associated operations :. #
 #################################################################
-# .' is the transposition operator as multi-arrays in Julia are column major...
 const CAYLEY = permutedims(
-    [find_prod(α(i), α(j)) for j in allowed, i in allowed],
+    [find_prod(α(i), α(j)) for j in ALLOWED, i in ALLOWED],
     [2,1]
 )
 
 """Helper to quickly find an α in the Cayley table"""
-ix(a::α) = find(μ -> μ == a.index, allowed)
+ix(a::α) = find(μ -> μ == a.index, ALLOWED)
 
+"""Helper to aid in transferring sign information from αs to ξs"""
+extract_sign(a::α) = (a.sign == -1) ? (α(a.index, 1), -1) : (a, 1)
+
+################################
+# .: Operations on αs alone :. #
+################################
 """Lookup in the Cayley table and determine the new sign"""
 function *(i::α, j::α)
     prod = CAYLEY[ix(i),ix(j)][1]
@@ -178,15 +191,57 @@ function *(i::α, j::α)
 end
 
 """Find the inverse of the first argument and then multiply"""
-function /(i::α, j::α)
+function \(i::α, j::α)
     i_inverse = α(i.index, (i * i).sign * i.sign)
     return i_inverse * j
 end
 
 """Find the inverse of the second argument and then multiply"""
-function \(i::α, j::α)
+function /(i::α, j::α)
     j_inverse = α(j.index, (j * j).sign * j.sign)
     return i * j_inverse
+end
+
+################################
+# .: Operations on ξα pairs :. #
+################################
+#=
+    NOTE:: Addition/subtraction of ξα pairs is only defined for matching αs.
+    It is also deliberate that there is no definition given for multiplication
+    of an ξα pair by a scalar: in accordance with the principle of Absolute
+    Relativity, this is not allowed and instead we must multiply by a
+    (scalar, αp) pair.
+=#
+function +(i::ξμ, j::ξμ)
+    (iξ, iα), (jξ, jα) = i, j
+    iα == jα || error("can only add components with the same α: $iα != $jα")
+    return ξα(iξ+jξ, iα)
+end
+
+function -(i::ξμ, j::ξμ)
+    jξ, jα = j
+    return i +  ξα(-jξ, jα)
+end
+
+function *(i::ξμ, j::ξμ)
+    (iξ, iα), (jξ, jα) = i, j
+    new_α, sign = extract_sign(iα*jα)
+    ξ = sign * iξ * jξ
+    return ξα(ξ, new_α)
+end
+
+function \(i::ξμ, j::ξμ)
+    (iξ, iα), (jξ, jα) = i, j
+    new_α, sign = extract_sign(iα \ jα)
+    ξ = sign * (iξ \ jξ)
+    return ξα(ξ, new_α)
+end
+
+function /(i::ξμ, j::ξμ)
+    (iξ, iα), (jξ, jα) = i, j
+    new_α, sign = extract_sign(iα / jα)
+    ξ = sign * (iξ / jξ)
+    return ξα(ξ, new_α)
 end
 
 ################################
