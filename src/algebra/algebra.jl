@@ -32,12 +32,12 @@ import Base.*, Base./, Base.\, Base.==, Base.show
 
 
 ####################
-# .: Paramaters :. #
+# .: Parameters :. #
 ####################
-const allowed = ["p","0","1","2","3","10","20","30","23",
+const ALLOWED = ["p","0","1","2","3","10","20","30","23",
                  "31","12","023","031","012","123","0123"]
-const targets = Dict([(Set(a), a) for a in allowed])
-const metric = Dict(zip("0123", [1 -1 -1 -1]))
+const TARGETS = Dict([(Set(a), a) for a in ALLOWED])
+const METRIC = Dict(zip("0123", [1 -1 -1 -1]))
 
 #######################
 # .: Unit Elements :. #
@@ -49,15 +49,15 @@ type α
 
     function α(index::String, sign::Integer)
         sign in [1, -1]  || error("invalid α: $index, $sign")
-        index in allowed || error("invalid α: $index, $sign")
-        index in allowed || error("invalid α: $index, $sign")
+        index in ALLOWED || error("invalid α: $index, $sign")
+        index in ALLOWED || error("invalid α: $index, $sign")
         new(index, Int8(sign))
     end
 
     function α(index::String)
         sign = '-' in index ? -1 : 1
         val = sign > 0 ? index : index[2:end]
-        val in allowed || error("invalid α: $index")
+        val in ALLOWED || error("invalid α: $index")
         α(index, sign)
     end
 end
@@ -113,7 +113,7 @@ function find_prod(i::alpha, j::alpha)
         # Only a total odd number of pops will negate
         sign *= (n_pops % 2 == 1 ? -1 : 1)
         # Cancelling unit elements negates based on the metric being used
-        sign *= metric[repeated]
+        sign *= METRIC[repeated]
         # Remove the duplicate elements
         components = String(filter(μ -> μ != repeated, [c for c in components]))
     end
@@ -122,12 +122,13 @@ function find_prod(i::alpha, j::alpha)
     length(components) == 0 && return α("p", sign)
 
     # Rule (3) :: Sorting of elements via bubble sort to track pops
-    target = targets[Set(components)]
+    target = TARGETS[Set(components)]
 
     # Allow for immediate return if the product is already in the correct order
     target == components && return α(target, sign)
 
-    #=  I am converting the current product into an array of integers in order
+    #=
+        I am converting the current product into an array of integers in order
         to allow for the different orderings of each final product in a flexible
         way. Ordering is a mapping of index (0,1,2,3) to position in the final
         product. This should be stable regardless of how we define the 16
@@ -148,9 +149,7 @@ function find_prod(i::alpha, j::alpha)
     current = [ordering[c] for c in components]
     while length(current) > 0
         sign *= iseven(current[1]) ? -1 : 1
-        # Remove the first element
         shift!(current)
-        # Re-label from 1:(n-1) and repeat
         new_order = Dict([(j,i) for (i,j) in enumerate(sort(current))])
         current = [new_order[k] for k in current]
     end
@@ -163,7 +162,7 @@ end
 # .: The pre-computed Cayley table and associated operations :. #
 #################################################################
 # .' is the transposition operator as multi-arrays in Julia are column major...
-const cayley = permutedims(
+const CAYLEY = permutedims(
     [find_prod(α(i), α(j)) for j in allowed, i in allowed],
     [2,1]
 )
@@ -173,7 +172,7 @@ ix(a::α) = find(μ -> μ == a.index, allowed)
 
 """Lookup in the Cayley table and determine the new sign"""
 function *(i::α, j::α)
-    prod = cayley[ix(i),ix(j)][1]
+    prod = CAYLEY[ix(i),ix(j)][1]
     prod.sign *= i.sign * j.sign
     return prod
 end
@@ -197,10 +196,10 @@ end
     a couple of different ways so that it can be pasted into excel
     for visualising and looking at properties such as sign and symmetry."""
 function view_cayley(output="indices")
-    s = join(cayley[1,:], ",")
+    s = join(CAYLEY[1,:], ",")
     println(",$s")
     for i in 1:16
-        c = cayley[i,:]
+        c = CAYLEY[i,:]
         print("$(c[1]),")
         if output == "indices"
             println(join([a for a in c], ","))
@@ -215,5 +214,3 @@ function view_cayley(output="indices")
         end
     end
 end
-
-view_cayley("sign")

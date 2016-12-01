@@ -18,10 +18,15 @@ function ∇(vec::Ξ)
     throw("Not yet implemented!")
 end
 
-
 "DμΞ4 = α0∂0Ξ4 - α1∂1Ξ4 - α2∂2Ξ4 - α3∂3Ξ4"
 function Dμ(vec::Ξ)
     t = ∂(vec, 0)
     x, y, z = ∇i(vec)
     return Ξ(t, -x, -y, -z)
 end
+
+
+# Non-unicode versions
+partial(vec::Ξ, var::int) = ∂(vec::Ξ, var::Int)
+del(vec::Ξ) = ∇(vec::Ξ)
+D_mu(vec::Ξ) = Dμ(vec::Ξ)
