@@ -37,14 +37,13 @@ import Base.*, Base./, Base.\, Base.==, Base.show
 const allowed = ["p","0","1","2","3","10","20","30","23",
                  "31","12","023","031","012","123","0123"]
 const targets = Dict([(Set(a), a) for a in allowed])
+const metric = Dict(zip("0123", [1 -1 -1 -1]))
 
 #######################
 # .: Unit Elements :. #
 #######################
-abstract alpha
-
 """One of the 16 unit element of the algebra listed in `allowed`"""
-type α <: alpha
+type α
     index::String
     sign::Int8
 
@@ -63,6 +62,9 @@ type α <: alpha
     end
 end
 
+# Non-unicode version
+typealias alpha α
+
 """Pretty print αs when working in the REPL"""
 show(io::IO, a::alpha) = print(io, (a.sign > 0 ? "" : "-") * "α" * a.index)
 
@@ -72,11 +74,14 @@ show(io::IO, a::alpha) = print(io, (a.sign > 0 ? "" : "-") * "α" * a.index)
 ################################
 # .: Vectors and components :. #
 ################################
-typealias AR_pair Tuple{Any,α}
-typealias ξμ Tuple{Real,α}
+typealias AR_pair Tuple{Any,alpha}
+
+typealias ξα Tuple{Real,alpha}
+typealias xi_component ξα
 
 typealias Ξ Vector{AR_pair}
 typealias xi Ξ
+
 
 
 ##########################
@@ -107,8 +112,8 @@ function find_prod(i::alpha, j::alpha)
         n_pops = second - first - 1
         # Only a total odd number of pops will negate
         sign *= (n_pops % 2 == 1 ? -1 : 1)
-        # Cancelling α0 is idempotent, cancelling αi negates
-        sign *= (repeated != '0' ? -1 : 1)
+        # Cancelling unit elements negates based on the metric being used
+        sign *= metric[repeated]
         # Remove the duplicate elements
         components = String(filter(μ -> μ != repeated, [c for c in components]))
     end
@@ -122,71 +127,46 @@ function find_prod(i::alpha, j::alpha)
     # Allow for immediate return if the product is already in the correct order
     target == components && return α(target, sign)
 
-    #=  NOTE:: I am converting the current product into an array of integers
-        in order to allow for the different orderings of each final product in
-        a flexible way. Ordering is a mapping of index (0,1,2,3) to position in
-        the final product. This should be stable regardless of how we define the
-        16 elements of the algebra.
+    #=  I am converting the current product into an array of integers in order
+        to allow for the different orderings of each final product in a flexible
+        way. Ordering is a mapping of index (0,1,2,3) to position in the final
+        product. This should be stable regardless of how we define the 16
+        elements of the algebra.
+
+        The algorithm makes use of the fact that for any ordering we can
+        dermine the whether the total number of pops is odd or even by looking
+        at the first element alone and then recursing on the rest of the
+        ordering as a sub-problem.
+        If the final position of the first element is even then it will take an
+        odd number of pops to correctly position it. We can then look only at
+        the remaining elements and re-label them with indices 1->(n-1) and
+        repeat the process until we are done.
+        NOTE:: I proved this by brute force. (i.e. listing all options and
+        showing that the proposition holds...!)
     =#
     ordering = Dict([(c,i) for (i,c) in enumerate(target)])
     current = [ordering[c] for c in components]
-    _, n_pops = count_pops(current)
-    if n_pops % 2 == 1
-        sign *= -1
+    while length(current) > 0
+        sign *= iseven(current[1]) ? -1 : 1
+        # Remove the first element
+        shift!(current)
+        # Re-label from 1:(n-1) and repeat
+        new_order = Dict([(j,i) for (i,j) in enumerate(sort(current))])
+        current = [new_order[k] for k in current]
     end
 
     return α(target, sign)
 end
 
 
-"""Count the number of pops required to sort a source array into ascending
-order. This is really just a modified version of the standard recursive
-merge sort with a count of the number of pops are used during the merge step.
-In the main implementation of * we don't care about the final sorted array but
-we need to return it in order to allow the recursive implementation."""
-function count_pops(source::Array{Int, 1})
-    # Base case to terminate recursion
-    if length(source) == 1
-        return (source, 0)
-    end
-
-    # Split the input into two halves
-    mid = div(length(source), 2)
-    left, right = source[1:mid], source[mid+1:end]
-
-    # Recurse of each half to get sub counts
-    sorted_left, left_pops = count_pops(left)
-    sorted_right, right_pops = count_pops(right)
-
-    # Merge the halves together and count pops
-    total_pops = left_pops + right_pops
-    i, j = 0, 0
-    merged = []
-
-    while (i < length(sorted_left)) && (j < length(sorted_right))
-        # Taking from the left if both are equal
-        if sorted_left[i+1] <= sorted_right[j+1]
-            append!(merged, sorted_left[i+1])
-            i += 1
-        else
-            append!(merged, sorted_right[j+1])
-            j += 1
-            total_pops += (length(sorted_left) - i)
-        end
-    end
-
-    # Append any remaing element from the array that wasn't drained
-    i == length(sorted_left) && append!(merged, sorted_right[j+1:end])
-    j == length(sorted_right) && append!(merged, sorted_left[i+1:end])
-
-    return merged, total_pops
-end
-
 #################################################################
 # .: The pre-computed Cayley table and associated operations :. #
 #################################################################
 # .' is the transposition operator as multi-arrays in Julia are column major...
-const cayley = [find_prod(α(i), α(j)) for j in allowed, i in allowed].'
+const cayley = permutedims(
+    [find_prod(α(i), α(j)) for j in allowed, i in allowed],
+    [2,1]
+)
 
 """Helper to quickly find an α in the Cayley table"""
 ix(a::α) = find(μ -> μ == a.index, allowed)
@@ -213,21 +193,27 @@ end
 ################################
 # .: Viewing a Cayley Table :. #
 ################################
-#=  This is a quick and dirty way to print out the Cayley table in
+"""This is a quick and dirty way to print out the Cayley table in
     a couple of different ways so that it can be pasted into excel
-    for visualising and looking at properties such as sign and symmetry.
-=#
-s = join(cayley[1,:], ",")
-println(",$s")
-for i in 1:16
-    c = cayley[i,:]
-    print("$(c[1]),")
-    # String indices
-    println(join([a for a in c], ","))
-    # String indices
-    # println(join([a.index for a in c], ","))
-    # Indices only for quick colour scale view
-    #println(join([find(x -> x == a.index, allowed)[1] for a in c], ","))
-    # Sign
-    # println(join([a.sign for a in c], ","))
+    for visualising and looking at properties such as sign and symmetry."""
+function view_cayley(output="indices")
+    s = join(cayley[1,:], ",")
+    println(",$s")
+    for i in 1:16
+        c = cayley[i,:]
+        print("$(c[1]),")
+        if output == "indices"
+            println(join([a for a in c], ","))
+        elseif output == "strindices"
+            println(join([a.index for a in c], ","))
+        elseif output == "colmap"
+            println(join([find(x -> x == a.index, allowed)[1] for a in c], ","))
+        elseif output == "sign"
+            println(join([a.sign for a in c], ","))
+        else
+            error("Invalid output specification")
+        end
+    end
 end
+
+view_cayley("sign")

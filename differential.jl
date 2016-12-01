@@ -5,7 +5,7 @@ the 4-vector 4-differentail Dμ.
 In Cartesian coordinates this is:
     Dμ = ∂μ/αμ = ∂ / (αμ∂xμ) = α0∂0 - αi∂i = α0∂0 - ∇i
 =#
-using algebra
+include("algebra.jl")
 
 
 "Numeric Partial derivative of vec with respect to component var"
