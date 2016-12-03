@@ -28,8 +28,6 @@ manipulations of elements in the algebra.
 (3)   αμν == -ανμ
     "Adjacent indices can be popped by negating."
 =#
-import Base.+, Base.-, Base.*, Base./, Base.\, Base.==, Base.show
-
 
 ####################
 # .: Parameters :. #
@@ -38,18 +36,19 @@ const ALLOWED = ["p","0","1","2","3","10","20","30","23",
                  "31","12","023","031","012","123","0123"]
 const TARGETS = Dict([(Set(a), a) for a in ALLOWED])
 const METRIC = Dict(zip("0123", [1 -1 -1 -1]))
+const DIVISION_TYPE = "into"  # One of "by" or "into"
+
 
 #######################
 # .: Unit Elements :. #
 #######################
-"""One of the 16 unit element of the algebra listed in `allowed`"""
+"""One of the 16 unit element of the algebra listed in ALLOWED"""
 type α
     index::String
     sign::Int8
 
     function α(index::String, sign::Integer)
         sign in [1, -1]  || error("invalid α: $index, $sign")
-        index in ALLOWED || error("invalid α: $index, $sign")
         index in ALLOWED || error("invalid α: $index, $sign")
         new(index, Int8(sign))
     end
@@ -65,11 +64,9 @@ end
 # Non-unicode version
 typealias alpha α
 
-"""Pretty print αs when working in the REPL"""
-show(io::IO, a::alpha) = print(io, (a.sign > 0 ? "" : "-") * "α" * a.index)
-
 """αs are equal if their indices and signs are equal"""
 ==(i::alpha, j::alpha) = i.index == j.index && i.sign == j.sign
+
 
 ################################
 # .: Vectors and components :. #
@@ -83,26 +80,51 @@ show(io::IO, a::alpha) = print(io, (a.sign > 0 ? "" : "-") * "α" * a.index)
     As these operations require manipulation of α values, they are defined at
     the bottom of the file after the generation of the Cayley table.
 =#
-typealias AR_pair Tuple{Any,alpha}
+typealias AR_pair Tuple{Any,α}
 
-typealias ξα Tuple{Real,alpha}
+typealias ξα Tuple{Float64,α}
 typealias xi_component ξα
 
-typealias Ξ Vector{AR_pair}
+typealias Ξ Vector{ξα}
 typealias xi Ξ
+
+
+###############################
+# .: Formatting & printing :. #
+###############################
+show(io::IO, a::α) = print(io, "$(a.sign > 0 ? "" : "-")α$(a.index)")
+show(io::IO, j::ξα) = print(io, "α$(j[2].index) $(j[1])")
+
+
+###################################################
+# .: Initialisors for the general multivectors :. #
+###################################################
+Ξμ(init::Float64)   = [(init, α(a)) for a in "0123"]
+Ξμν(init::Float64)  = [(init, α(a)) for a in ALLOWED if length(a) == 2]
+Ξμνρ(init::Float64) = [(init, α(a)) for a in ALLOWED if length(a) == 3]
+ΞG(init::Float64)   = [(init, α(a)) for a in ALLOWED]
+# Non-unicode versions
+xi_1(init::Float64) = Ξμ(init::Float64)
+xi_2(init::Float64) = Ξμν(init::Float64)
+xi_3(init::Float64) = Ξμνρ(init::Float64)
+xi_G(init::Float64) = ΞG(init::Float64)
 
 
 ##########################
 # .: Operations on αs :. #
 ##########################
-"""Pre-compute the product of two αs in the algebra by first checking for special
+"""
+**find_prod**
+
+Pre-compute the product of two αs in the algebra by first checking for special
 case such as multiplication by αp and squaring and then using the set of rules
 defined above to pop and eliminate indices in order to determine the final
 product.
-NOTE:: The implementation of this is based on the paramaters at the top of this
+_NOTE_:: The implementation of this is based on the paramaters at the top of this
        file (algebra.jl). These can be modified in order to change the algebra
-       and see how the resulting equations are affected."""
-function find_prod(i::alpha, j::alpha)
+       and see how the resulting equations are affected.
+"""
+function find_prod(i::α, j::α)
     # Rule (1) :: Multiplication by αp is idempotent
     i.index == "p" && return α(j.index, (i.sign * j.sign))
     j.index == "p" && return α(i.index, (i.sign * j.sign))
@@ -166,26 +188,27 @@ function find_prod(i::alpha, j::alpha)
 end
 
 
-#################################################################
-# .: The pre-computed Cayley table and associated operations :. #
-#################################################################
+############################################################
+# .: The pre-computed Cayley table and helper functions :. #
+############################################################
 const CAYLEY = permutedims(
     [find_prod(α(i), α(j)) for j in ALLOWED, i in ALLOWED],
     [2,1]
 )
 
 """Helper to quickly find an α in the Cayley table"""
-ix(a::α) = find(μ -> μ == a.index, ALLOWED)
+ix(a::α) = find(μ -> μ == a.index, ALLOWED)[1]
 
 """Helper to aid in transferring sign information from αs to ξs"""
 extract_sign(a::α) = (a.sign == -1) ? (α(a.index, 1), -1) : (a, 1)
+
 
 ################################
 # .: Operations on αs alone :. #
 ################################
 """Lookup in the Cayley table and determine the new sign"""
 function *(i::α, j::α)
-    prod = CAYLEY[ix(i),ix(j)][1]
+    prod = CAYLEY[ix(i),ix(j)]
     prod.sign *= i.sign * j.sign
     return prod
 end
@@ -202,6 +225,7 @@ function /(i::α, j::α)
     return i * j_inverse
 end
 
+
 ################################
 # .: Operations on ξα pairs :. #
 ################################
@@ -212,60 +236,55 @@ end
     Relativity, this is not allowed and instead we must multiply by a
     (scalar, αp) pair.
 =#
-function +(i::ξμ, j::ξμ)
+function +(i::ξα, j::ξα)
     (iξ, iα), (jξ, jα) = i, j
     iα == jα || error("can only add components with the same α: $iα != $jα")
-    return ξα(iξ+jξ, iα)
+    return (iξ+jξ, iα)
 end
 
-function -(i::ξμ, j::ξμ)
+function -(i::ξα, j::ξα)
     jξ, jα = j
-    return i +  ξα(-jξ, jα)
+    return i + (-jξ, jα)
 end
 
-function *(i::ξμ, j::ξμ)
+function *(i::ξα, j::ξα)
     (iξ, iα), (jξ, jα) = i, j
     new_α, sign = extract_sign(iα*jα)
     ξ = sign * iξ * jξ
-    return ξα(ξ, new_α)
+    return (ξ, new_α)
 end
 
-function \(i::ξμ, j::ξμ)
+function \(i::ξα, j::ξα)
     (iξ, iα), (jξ, jα) = i, j
     new_α, sign = extract_sign(iα \ jα)
     ξ = sign * (iξ \ jξ)
-    return ξα(ξ, new_α)
+    return (ξ, new_α)
 end
 
-function /(i::ξμ, j::ξμ)
+function /(i::ξα, j::ξα)
     (iξ, iα), (jξ, jα) = i, j
     new_α, sign = extract_sign(iα / jα)
     ξ = sign * (iξ / jξ)
-    return ξα(ξ, new_α)
+    return (ξ, new_α)
 end
 
-################################
-# .: Viewing a Cayley Table :. #
-################################
-"""This is a quick and dirty way to print out the Cayley table in
-    a couple of different ways so that it can be pasted into excel
-    for visualising and looking at properties such as sign and symmetry."""
-function view_cayley(output="indices")
-    s = join(CAYLEY[1,:], ",")
-    println(",$s")
-    for i in 1:16
-        c = CAYLEY[i,:]
-        print("$(c[1]),")
-        if output == "indices"
-            println(join([a for a in c], ","))
-        elseif output == "strindices"
-            println(join([a.index for a in c], ","))
-        elseif output == "colmap"
-            println(join([find(x -> x == a.index, allowed)[1] for a in c], ","))
-        elseif output == "sign"
-            println(join([a.sign for a in c], ","))
-        else
-            error("Invalid output specification")
-        end
-    end
+
+######################################
+# .: Operations on ξα pairs and αs:. #
+######################################
+*(i::ξα, a::α) = (i[1], a * i[2])
+*(a::α, i::ξα) = i * a
+\(a::α, i::ξα) = (i[1], a \ i[2])
+/(i::ξα, a::α) = (i[1], i[2] / a)
+
+# Elsewhere in the code, you should use div() so that changing between the two
+# is managed by changing the value of DIVISION_TYPE in this file alone.
+if DIVISION_TYPE == "by"
+    div(comp::ξα, a::α) = comp / a
+    div(i::ξα, j::ξα) = i / j
+elseif DIVISION_TYPE == "into"
+    div(comp::ξα, a::α) = a \ comp
+    div(i::ξα, j::ξα) = j \ i
+else
+    error("Invalid division type: $DIVISION_TYPE")
 end
