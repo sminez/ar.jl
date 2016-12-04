@@ -54,12 +54,12 @@ export  α, alpha,
 ###########################
 # .: Load module files :. #
 ###########################
-for (dir, filename) in [
-    ("algebra", "algebra.jl"),
-    ("algebra", "differential.jl"),
-    ("algebra", "visualisation.jl")
+for file_path in [
+    "algebra/algebra.jl",
+    "algebra/differential.jl",
+    "utils/visualisation.jl"
     ]
-    include(joinpath(dir, filename))
+    include(file_path)
 end
 
 # End of module AR

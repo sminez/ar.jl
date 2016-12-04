@@ -1,16 +1,4 @@
 #=
-This package defines the types and operations required for the
-modified Dirac-Clifford Algebra to be computed numerically
-according to the principle of Absolute Relativity.
-
-As in the convention used in the theory, greek indices run 0,1,2,3
-and latin indices run 1,2,3.
-
-The definition of the 4-differntial Dμ is given in differentail.jl
-as this must be computed numerically and the way in which that is
-performed is allowed to vary.
-
-
 Multiplying αs
 ==============
 This is based on a set of simplification rules based on allowed

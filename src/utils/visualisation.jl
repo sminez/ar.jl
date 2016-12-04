@@ -7,6 +7,24 @@
     Plotting is being done using Gadfly:
         http://gadflyjl.org/stable/index.html
 =#
+const MUTED_AR_colors = [
+    Colors.RGB(a/255,b/255,c/255)
+    for (a,b,c) in [
+        # yellow 1
+        (219,199,143),
+        # reds
+        (135,46,46),(189,68,66),(214,104,71),(217,142,102),
+        # greens
+        (73,140,107),(132,179,148),(159,196,160),
+        # blues
+        (74,119,143),(111,160,176),(143,181,191),
+        # purples
+        (118,113,143),(156,142,173),(180,155,191),(76,72,97),
+        # yellow 2
+        (219,170,86)
+    ]
+]
+
 const AR_colors = [
     Colors.RGB(a/255,b/255,c/255)
     for (a,b,c) in [
@@ -26,6 +44,7 @@ const AR_colors = [
 ]
 
 const PALETTE = Scale.color_discrete_manual(AR_colors...)
+const MUTED_PALETTE = Scale.color_discrete_manual(MUTED_AR_colors...)
 
 
 ################################
@@ -76,8 +95,9 @@ will show the disribution of positive and negative products in the algebra.
 If a filename is supplied this will save an svg into the current directory.
 _NOTE_:: You should not provide a file extension.
 """
-function visualise_cayley(coloured=true, dims=(2000,2000), filename="")
+function visualise_cayley(muted=true, coloured=true, dims=(2000,2000), filename="")
     output = coloured ? "colmap" : "sign"
+    pal = muted ? MUTED_PALETTE : PALETTE
     # This is the best way I've found to convert an array of n, n-element
     # arrays into a single nxn multi-array.
     data = hcat(convert_cayley(output)...)
@@ -93,21 +113,21 @@ function visualise_cayley(coloured=true, dims=(2000,2000), filename="")
         Guide.title("Cayley Table for the Williamson Algebra"),
         Guide.xlabel(nothing),
         Guide.ylabel(nothing),
-        PALETTE
+        pal
         )
 
     if filename != ""
+        x, y = dims
         if endswith(filename, ".svg")
-            img(fname, x, y) = SVG(fname, x, y)
+            img = SVG(filename, x*px, y*px)
         elseif endswith(filename, ".png")
-            img(fname, x, y) = PNG(fname, x, y)
+            img = PNG(filename, x*px, y*px)
         elseif endswith(filename, ".pdf")
-            img(fname, x, y) = PDF(fname, x, y)
+            img = PDF(filename, x*px, y*px)
         else
             error("filename must end in .svg|png|pdf")
         end
-        x, y = dims
-        draw(img(filename, x*px, y*px), plt)
+        draw(img, plt)
     else
         return plt
     end
