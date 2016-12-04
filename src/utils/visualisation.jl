@@ -95,7 +95,9 @@ will show the disribution of positive and negative products in the algebra.
 If a filename is supplied this will save an svg into the current directory.
 _NOTE_:: You should not provide a file extension.
 """
-function visualise_cayley(muted=true, coloured=true, dims=(2000,2000), filename="")
+function visualise_cayley(;muted=true, coloured=true, dims=(2000,2000),
+                          title="Cayley Table for the Williamson Algebra",
+                          filename="")
     output = coloured ? "colmap" : "sign"
     pal = muted ? MUTED_PALETTE : PALETTE
     # This is the best way I've found to convert an array of n, n-element
@@ -110,7 +112,7 @@ function visualise_cayley(muted=true, coloured=true, dims=(2000,2000), filename=
     Gadfly.push_theme(AR_plot_style)
     plt = spy(
         data,
-        Guide.title("Cayley Table for the Williamson Algebra"),
+        Guide.title(title),
         Guide.xlabel(nothing),
         Guide.ylabel(nothing),
         pal
