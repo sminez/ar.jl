@@ -1,5 +1,5 @@
-Simulating The Dynamics of a Relativistic Fluid
-===============================================
+Working With The Dynamics Of A Relativistic Fluid
+=================================================
 
 ![Cayley Table for the Williamson Algebra](readme_icon.png)
 
