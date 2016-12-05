@@ -7,10 +7,6 @@
     Plotting is being done using Gadfly:
         http://gadflyjl.org/stable/index.html
 =#
-using Gadfly
-using Colors
-
-
 const MUTED_AR_colors = [
     Colors.RGB(a/255,b/255,c/255)
     for (a,b,c) in [
@@ -55,7 +51,7 @@ const MUTED_PALETTE = Scale.color_discrete_manual(MUTED_AR_colors...)
 # .: Viewing a Cayley Table :. #
 ################################
 """
-**convert_cayley**
+__convert_cayley__
 
 Change the α values in CAYLEY into alternate formats for visualisation
 """
@@ -74,7 +70,7 @@ function convert_cayley(output="indices")
 end
 
 """
-**print_cayley**
+__print_cayley__
 
 This is a quick and dirty way to print out the Cayley table in
 a couple of different ways so that it can be pasted into excel
@@ -91,7 +87,7 @@ function print_cayley(output="indices", headers=true)
 end
 
 """
-**visualise_cayley**
+__visualise_cayley__
 
 Plot a heatmap of the generated Cayley table. If coloured=false then this
 will show the disribution of positive and negative products in the algebra.
@@ -111,6 +107,7 @@ function visualise_cayley(;muted=true, coloured=true, dims=(2000,2000),
     AR_plot_style = style(
         background_color=colorant"white",
         minor_label_color=colorant"white",
+        minor_label_font_size=1px,
         key_position=:none
     )
     Gadfly.push_theme(AR_plot_style)

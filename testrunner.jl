@@ -6,7 +6,7 @@
     call to @test so that it is easier to eyeball the output and see what is
     broken.
 =#
-using Base.Test
+using FactCheck
 include("src/AR.jl")
 using AR
 
@@ -17,8 +17,6 @@ ALLOWED = AR.ALLOWED
 TARGETS = AR.TARGETS
 METRIC = AR.METRIC
 DIVISION_TYPE = AR.DIVISION_TYPE
-# For printing the allowed elements in test descriptions
-allowed = "{$(join(ALLOWED, ","))}"
 
 tests = []
 

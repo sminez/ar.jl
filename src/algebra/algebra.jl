@@ -45,7 +45,7 @@ type α
         sign = '-' in index ? -1 : 1
         val = sign > 0 ? index : index[2:end]
         val in ALLOWED || error("invalid α: $index")
-        α(index, sign)
+        α(val, sign)
     end
 end
 
@@ -263,7 +263,7 @@ end
 # .: Operations on ξα pairs and αs:. #
 ######################################
 *(i::ξα, a::α) = (i[1], a * i[2])
-*(a::α, i::ξα) = i * a
+*(a::α, i::ξα) = i * -a
 \(a::α, i::ξα) = (i[1], a \ i[2])
 /(i::ξα, a::α) = (i[1], i[2] / a)
 

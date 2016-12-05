@@ -1,29 +1,41 @@
-@testset "AlgebraProperties" begin
-    println("Algebra Properties")
+# Test cases for algebra.jl
+
+facts("AlgebraProperties") do
+    println("--> allowed = {$(join(ALLOWED, ",")))}")
     println("-----------------------------------------------------------------")
-    println("--> allowed = $allowed\n")
 
     #####################################
 
-    println("αp.αμ = αμ ∀ μ ∈ allowed")
-    @test all([α("p")*α(j) == α(j) for j in ALLOWED])
+    context("αp.αμ = αμ ∀ μ ∈ allowed") do
+        for i in ALLOWED
+            @fact α("p")*α(i) --> α(i)
+        end
+    end
 
     #####################################
 
-    println("-αp.αμ = -αμ ∀ μ ∈ allowed")
-    @test all([α("p", -1)*α(j) == α(j, -1) for j in ALLOWED])
+    context("-αp.αμ = -αμ ∀ μ ∈ allowed") do
+        for i in ALLOWED
+            @fact α("-p")*α(i) --> α(i, -1)
+        end
+    end
 
     #####################################
 
-    println("αμν = -αμν ∀ μ,ν ∈ {0,1,2,3}, μ != ν")
-    units = ["0" "1" "2" "3"]
-    ij_ji = [(α(i)*α(j) == -(α(j)*α(i))) for i in units, j in units if i != j]
-    @test all(ij_ji)
+    context("αμν = -αμν ∀ μ,ν ∈ {0,1,2,3}, μ ≠ ν") do
+        units = ["0" "1" "2" "3"]
+        for i in units, j in units
+            if i != j
+                @fact (α(i)*α(j) --> -(α(j)*α(i)))
+            end
+        end
+    end
 
     #####################################
 
-    println("aμ.αμ = (-)αp ∀ μ ∈ allowed")
-    @test all([(α(i)^2).index == "p" for i in ALLOWED])
-
-    println("\n-----------------------------------------------------------------")
+    context("aμ.αμ = (-)αp ∀ μ ∈ allowed") do
+        for i in ALLOWED
+            @fact α(i)^2 --> anyof(α("p"), α("-p"))
+        end
+    end
 end
