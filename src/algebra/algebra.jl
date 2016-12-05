@@ -36,16 +36,20 @@ type α
     sign::Int8
 
     function α(index::String, sign::Integer)
-        sign in [1, -1]  || error("invalid α: $index, $sign")
-        index in ALLOWED || error("invalid α: $index, $sign")
+        sign in [1, -1]  || throw(TypeError("invalid α: $index, $sign"))
+        index in ALLOWED || throw(TypeError("invalid α: $index, $sign"))
         new(index, Int8(sign))
     end
 
     function α(index::String)
         sign = '-' in index ? -1 : 1
         val = sign > 0 ? index : index[2:end]
-        val in ALLOWED || error("invalid α: $index")
+        val in ALLOWED || throw(TypeError("invalid α: $index"))
         α(val, sign)
+    end
+
+    function α(a::α)
+        throw(TypeError("αs can not be initialised with another α"))
     end
 end
 
@@ -53,7 +57,7 @@ end
 typealias alpha α
 
 """αs are equal if their indices and signs are equal"""
-==(i::α, j::α) = i.index == j.index && i.sign == j.sign
+==(i::α, j::α) = (i.index == j.index) && (i.sign == j.sign)
 """negation swaps the sign"""
 -(i::α) = α(i.index, (-1*i.sign))
 
@@ -276,5 +280,5 @@ elseif DIVISION_TYPE == "into"
     div(comp::ξα, a::α) = a \ comp
     div(i::ξα, j::ξα) = j \ i
 else
-    error("Invalid division type: $DIVISION_TYPE")
+    throw(ArgumentError("Invalid division type: $DIVISION_TYPE"))
 end

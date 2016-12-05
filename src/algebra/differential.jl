@@ -17,7 +17,7 @@ typealias d_mu ∂μ
 # .: Derivative operations on Ξ vectors :. #
 ############################################
 """
-**∂ | partial**
+__∂ | partial__
 
 Find the partial derivative of component with respect to wrt.
 This method allows you to specify a sign (+-1) in which represents calculating
@@ -48,7 +48,7 @@ D_mu(vec::Ξ) = Dμ(vec::Ξ)
 # .: Operations on derivatived vectors :. #
 ###########################################
 """
-**by_α**
+__by_α__
 
 Group derivative terms according to their unit element.
 This converts the result of a derivative - (∂,α-orig,ξα-new) - into tuple of
@@ -66,7 +66,7 @@ function by_α(vec::∂μ)
 end
 
 """
-**show_by_α**
+__show_by_α__
 
 Pretty print an α_grouped derivative.
 """
