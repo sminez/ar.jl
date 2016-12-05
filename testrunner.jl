@@ -1,10 +1,13 @@
 #=
     A simple test runner script to collect tests and display results.
 
-    NOTE:: Testsets have been defined in the tests directory and each additional
-    test should print a short description of what the test is about before the
-    call to @test so that it is easier to eyeball the output and see what is
-    broken.
+    Testing is being done using FactCheck.
+        >>> https://github.com/JuliaArchive/FactCheck.jl
+
+    Test contexts have been defined for logical concepts that are then
+    iterated over for the possible input domain. Where possible I am
+    trying to check every case, if not then at least every allowed
+    input type.
 =#
 using FactCheck
 include("src/AR.jl")
@@ -26,8 +29,13 @@ for (root, dirs, files) in walkdir("tests/")
     end
 end
 
-println("Running tests:...")
+println("Running test suite:...\n")
 
 for test in tests
+    println(".: $test :.")
     include(test)
 end
+
+# FactCheck suppresses the exit status so re-raise it
+# at the end of the test run.
+FactCheck.exitstatus()
