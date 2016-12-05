@@ -53,7 +53,9 @@ end
 typealias alpha α
 
 """αs are equal if their indices and signs are equal"""
-==(i::alpha, j::alpha) = i.index == j.index && i.sign == j.sign
+==(i::α, j::α) = i.index == j.index && i.sign == j.sign
+"""negation swaps the sign"""
+-(i::α) = α(i.index, (-1*i.sign))
 
 
 ################################
@@ -102,7 +104,7 @@ xi_G(init::Float64) = ΞG(init::Float64)
 # .: Operations on αs :. #
 ##########################
 """
-**find_prod**
+__find_prod__
 
 Pre-compute the product of two αs in the algebra by first checking for special
 case such as multiplication by αp and squaring and then using the set of rules

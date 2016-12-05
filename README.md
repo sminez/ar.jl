@@ -3,8 +3,8 @@ Working With The Dynamics Of A Relativistic Fluid
 
 ![Cayley Table for the Williamson Algebra](readme_icon.png)
 
-The code in this repository is a work to simulate the dynamics
-of the relativistic fluid theorised by Dr J.G.Williamson.
+The code in this repository is a work to calculate with and simulate the dynamics
+of the relativistic fluid theorised by [Dr J.G.Williamson](http://www.gla.ac.uk/schools/engineering/staff/johnwilliamson/).
 
 
 ## algebra
@@ -18,15 +18,20 @@ and providing helper functions to lookup values within it.
 __NOTE__:: The variations on the algebra - whilst still being researched - can be
 selected by altering the parameters at the top of the _algebra.jl_ file.
 
+
 ## numeric
 _Not started yet_
+
 Numerical methods and algorithms to compute results under AR.
+
 
 ## modeling
 _Not started yet_
+
 Attempts at modeling physical particles and situations.
 
 __TODO__:: Look at modifying FDTD/FDFD algorithms and approaches to begin with.
+
 
 ## utils
 Everything else! So far this contains some functions to visualise the nature of
@@ -40,3 +45,4 @@ the Cayley Table for the algebra as the parameters are modified.
 * [WikiBook Tutorial](https://en.wikibooks.org/wiki/Introducing_Julia/)
 * [Unit Testing in Julia](http://docs.julialang.org/en/release-0.5/stdlib/test/)
 * [Gadfly Plotting Library](http://gadflyjl.org/stable/index.html)
+* [Static Compilation](http://juliacomputing.com/blog/2016/02/09/static-julia.html)

@@ -24,8 +24,6 @@ module AR
 ######################
 import Base.+, Base.-, Base.*, Base./, Base.\, Base.==, Base.show, Base.div
 using Iterators
-using Gadfly
-using Colors
 
 ####################################
 # .: Exported types and methods :. #
@@ -44,11 +42,12 @@ export  α, alpha,
         Dμ, D_mu,
         ∇i, del_i,
         by_α,
-        show_by_α,
-
+        show_by_α
+        #=
         convert_cayley,
         print_cayley,
         visualise_cayley
+        =#
 
 
 ###########################
@@ -56,8 +55,8 @@ export  α, alpha,
 ###########################
 for file_path in [
     "algebra/algebra.jl",
-    "algebra/differential.jl",
-    "utils/visualisation.jl"
+    "algebra/differential.jl"
+    #"utils/visualisation.jl"
     ]
     include(file_path)
 end

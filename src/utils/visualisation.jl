@@ -7,6 +7,10 @@
     Plotting is being done using Gadfly:
         http://gadflyjl.org/stable/index.html
 =#
+using Gadfly
+using Colors
+
+
 const MUTED_AR_colors = [
     Colors.RGB(a/255,b/255,c/255)
     for (a,b,c) in [
