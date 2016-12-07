@@ -48,6 +48,6 @@ facts("Constructor verification :: α") do
         @fact_throws MethodError α(α("0")) "α allowed"
         @fact_throws MethodError α("0", 2) "positive integer sign not ∈ [1 -1]"
         @fact_throws MethodError α("0", -42) "negative integer sign not ∈ [1 -1]"
-        @fact_throws MethodError α("0", 2.7) "float sign"
+        @fact_throws MethodError α("0", 2.7) "float sign allowed"
     end
 end

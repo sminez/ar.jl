@@ -59,26 +59,59 @@ typealias alpha α
 """αs are equal if their indices and signs are equal"""
 ==(i::α, j::α) = (i.index == j.index) && (i.sign == j.sign)
 """negation swaps the sign"""
--(i::α) = α(i.index, (-1*i.sign))
+-(a::α) = α(a.index, (-1 * a.sign))
 
 
 ################################
 # .: Vectors and components :. #
 ################################
-#=
-    NOTE:: While αs are allowed to have either sign, when they are bound as
-    part of an AR_pair their sign information is transferred to the paramater
-    they are paired with in order to simplify implementations of calculations
-    and improve performance.
+"""
+__ξα vector components__
+(component, alpha) pairs are stored as ξα data structures that also keep track
+of which partial derivaties we need to caclulate.
+This _must_ be specified directly in the case of a floating point array representing
+the component values of Ξ at each point in spacetime but it will be inferred for
+functions and symbolic values.
 
-    As these operations require manipulation of α values, they are defined at
-    the bottom of the file after the generation of the Cayley table.
-=#
-typealias AR_pair Tuple{Any,α}
+The intended way of creating function_ξα values is via the f-string macro defined
+in `parse.jl` in the utils directory. Helper functions for initialising the
+symbolic representations of the general multi-vectors are provided below.
+"""
+abstract ξα
 
-typealias ξα Tuple{Float64,α}
-typealias xi_component ξα
+type symbolic_ξα
+    alpha::α
+    xi::Symbol
+    wrt::Set{α}
 
+    """Symbols track the initial component and differentiate wrt everything"""
+    function symbolic_ξα(alpha::α)
+        sym = Symbol("ξ" * alpha.index)
+        wrt = Set([α("0"), α("1"), α("2"), α("3")])
+        new(alpha, sym, wrt)
+    end
+end
+
+type function_ξα
+    alpha::α
+    xi::Expr
+    wrt::Set{α}
+end
+
+type array_ξα
+    alpha::α
+    xi::Array{Float64}
+    wrt::Set{α}
+end
+
+# Non-unicode
+typealias AR_pair ξα
+typealias symbolic_AR_pair symbolic_ξα
+typealias function_AR_pair function_ξα
+typealias array_AR_pair array_ξα
+
+# Only one vector type
+# TODO:: work out how to validate uniquness of α values
 typealias Ξ Vector{ξα}
 typealias xi Ξ
 
@@ -87,21 +120,29 @@ typealias xi Ξ
 # .: Formatting & printing :. #
 ###############################
 show(io::IO, a::α) = print(io, "$(a.sign > 0 ? "" : "-")α$(a.index)")
-show(io::IO, j::ξα) = print(io, "α$(j[2].index) $(j[1])")
+show(io::IO, j::ξα) = print(io, "$(j.alpha) $(j.xi)")
 
 
 ###################################################
 # .: Initialisors for the general multivectors :. #
 ###################################################
-Ξμ(init::Float64)   = [(init, α(a)) for a in "0123"]
-Ξμν(init::Float64)  = [(init, α(a)) for a in ALLOWED if length(a) == 2]
-Ξμνρ(init::Float64) = [(init, α(a)) for a in ALLOWED if length(a) == 3]
-ΞG(init::Float64)   = [(init, α(a)) for a in ALLOWED]
+Ξp()   = [symbolic_ξα(α("p"))]
+Ξμ()   = [symbolic_ξα(α(a)) for a in "0123"]
+Ξμν()  = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 2]
+Ξμνρ() = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 3]
+ΞG()   = [symbolic_ξα(α(a)) for a in ALLOWED]
+
 # Non-unicode versions
-xi_1(init::Float64) = Ξμ(init::Float64)
-xi_2(init::Float64) = Ξμν(init::Float64)
-xi_3(init::Float64) = Ξμνρ(init::Float64)
-xi_G(init::Float64) = ΞG(init::Float64)
+xi_1() = Ξμ()
+xi_2() = Ξμν()
+xi_3() = Ξμνρ()
+xi_G() = ΞG()
+
+"""Validator for custom Ξ definitions"""
+function Ξ(vec::Vector{ξα})
+    length(Set(v.alpha for v in vec)) < length(vec) && throw(error("Repeated α in Ξ"))
+    return vec
+end
 
 
 ##########################
@@ -124,11 +165,9 @@ function find_prod(i::α, j::α)
     j.index == "p" && return α(i.index, (i.sign * j.sign))
 
     # Rule (2) :: Squaring and popping
+    sign = i.sign * j.sign
     components = i.index * j.index
     intersection = intersect(Set(i.index), Set(j.index))
-
-    # Determine if the sign of the initial product is +ve or -ve
-    sign = i.sign * j.sign
 
     for repeated in intersection
         first, second = find([c for c in components] .== repeated)
@@ -138,7 +177,6 @@ function find_prod(i::α, j::α)
         sign *= (n_pops % 2 == 1 ? -1 : 1)
         # Cancelling unit elements negates based on the metric being used
         sign *= METRIC[repeated]
-        # Remove the duplicate elements
         components = String(filter(μ -> μ != repeated, [c for c in components]))
     end
 
@@ -220,18 +258,21 @@ function /(i::α, j::α)
 end
 
 
-################################
-# .: Operations on ξα pairs :. #
-################################
+###########################
+# .: Operations on ξαs :. #
+###########################
 #=
-    NOTE:: Addition/subtraction of ξα pairs is only defined for matching αs.
-    It is also deliberate that there is no definition given for multiplication
-    of an ξα pair by a scalar: in accordance with the principle of Absolute
-    Relativity, this is not allowed and instead we must multiply by a
-    (scalar, αp) pair.
-=#
+
+TODO:: Get this working with the new ξα definition
+
+NOTE:: Addition/subtraction of ξα pairs is only defined for matching αs.
+It is also deliberate that there is no definition given for multiplication
+of an ξα pair by a scalar: in accordance with the principle of Absolute
+Relativity, this is not allowed and instead we must multiply by a
+(scalar, αp) pair.
+
 function +(i::ξα, j::ξα)
-    (iξ, iα), (jξ, jα) = i, j
+    (iξ, iα), (jξ, jα) = (i.xi, i.alpha), (j.xi, j.alpha)
     iα == jα || error("can only add components with the same α: $iα != $jα")
     return (iξ+jξ, iα)
 end
@@ -261,15 +302,35 @@ function /(i::ξα, j::ξα)
     ξ = sign * (iξ / jξ)
     return (ξ, new_α)
 end
+=#
 
 
-######################################
-# .: Operations on ξα pairs and αs:. #
-######################################
-*(i::ξα, a::α) = (i[1], a * i[2])
-*(a::α, i::ξα) = i * -a
-\(a::α, i::ξα) = (i[1], a \ i[2])
-/(i::ξα, a::α) = (i[1], i[2] / a)
+#################################
+# .: Operations on ξαs and αs:. #
+#################################
+function *(i::ξα, a::α)
+    new_ξα = copy(i)
+    new_ξα.alpha = new_ξα.alpha * a
+    return new_ξα
+end
+
+function *(a::α, i::ξα)
+    new_ξα = copy(i)
+    new_ξα.alpha = a * new_ξα.alpha
+    return new_ξα
+end
+
+function \(a::α, i::ξα)
+    new_ξα = copy(i)
+    new_ξα.alpha = a \ new_ξα.alpha
+    return new_ξα
+end
+
+function /(i::ξα, a::α)
+    new_ξα = copy(i)
+    new_ξα.alpha = new_ξα.alpha / a
+    return new_ξα
+end
 
 # Elsewhere in the code, you should use div() so that changing between the two
 # is managed by changing the value of DIVISION_TYPE in this file alone.

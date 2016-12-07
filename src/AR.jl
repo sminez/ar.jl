@@ -47,6 +47,9 @@ export  α, alpha,
         by_α,
         show_by_α,
 
+        func_component,
+        @f_str,
+
         convert_cayley,
         print_cayley,
         visualise_cayley
@@ -59,7 +62,8 @@ export  α, alpha,
 for file_path in [
     "algebra/algebra.jl",
     "algebra/differential.jl",
-    "utils/visualisation.jl"
+    "utils/visualisation.jl",
+    "utils/parse.jl"
     ]
     include(file_path)
 end
