@@ -4,45 +4,65 @@ Parsing Ξ expressions
 
 This is a mix of utility functions that are intended to enable conversion
 from traditional mathematical syntax to an internal representation that can
-be manipulated.
+be manipulated efficiently.
+
+The main work being done so far is focusing on symbolic manipulation of the
+algebra only whereas this would allow for analytic / numberic solutions to be
+computed.
 =#
-UNITS = Dict(zip("txyz", ["0", "1", "2", "3"]))
-
-type eqn_component
-    expr::Expr
-    wrt::Set{α}
-    alpha::α
-end
+const UNITS = Dict(zip("txyz", [α("0"), α("1"), α("2"), α("3")]))
 
 
 """
-__equation"" strings__
-Parse a string of the form `equation"αμν[f(t,x,y,z) _+_ g(t,x,y,z)]` into an
-internal data structure that can be used to perform calculations
+__f"αμν[<function>]" strings__
+Parse a string of the form `f"αμν[f(t,x,y,z) _+_ g(t,x,y,z)]` into an
+internal data structure that can be used to perform calculations.
+
+_Present limitations_
+The function must be expressed as a linear sum of bracketed terms, each preceeded
+by an α value. The terms must be separated by `_+_` or `_-_` which will be applied
+to the alpha values specified before computation.
+The functions within the brackets are currently expected to be a single function
+with arguments within braces.
+
+_future work_
+Grouping of alpha terms shouldn't be too difficult: `(α10 - α23)[sin(t)]`.
+Allow for polynomial functions.
+Allow for arbitrary complexity in functions
 """
-macro equation_str(s)
-    components = split(s, r"\s?_._\s?")
-    binops = matchall(r"_(.)_", s)
-    equation = []
+function parse_function(s::String)
+    components = split(s, r"\s?,\s?")
+    func = []
 
     for component in components
         _wrt = Set{α}()
-        match_α = match(r"α(?<alpha>\d*)\[(?<func>.*)\] ?", component)
-        _α = match_α["alpha"]
-        _func = match_α["func"]
+        match_α = match(
+            r"(?<sign>[+-]?)α(?<alpha>\d+)\[(?<func>.*)\] ?",
+            component
+        )
 
-        match_f_args = match(r"(?<mfunc>.*)\((?<strargs>.*)\)", _func)
-        _mfunc = match_f_args["mfunc"]
-        _strargs = match_f_args["strargs"]
+        match_f_args = match(
+            # TODO:: pull out mathematical functions and actually differentiate
+            #r"(?<mfunc>.*)\((?<args>.*)\)",
+            r".*\((?<args>.*)\)",
+            match_α["func"]
+        )
 
-        for arg in _strargs
-            if arg in "txyz"
-                # TODO:: negative alphas
-                push!(_wrt, α(UNITS[arg]))
-            end
+        _sign = match_α["sign"] == "-" ? -1 : 1
+        _α = α(String(match_α["alpha"]), _sign)
+        _comp = parse(match_α["func"])
+        args = match_f_args["args"]
+
+        for arg in args
+            # Store alpha values that we need to calculate derivatives wrt
+            arg in "txyz" && push!(_wrt, UNITS[arg])
         end
-        push!(equation, eqn_component(parse(_func), _wrt, α(String(_α))))
-        length(binops) > 0 && push!(equation, parse(shift!(binops)))
+        push!(func, function_ξα(_α, _comp, _wrt))
     end
-    return equation
+    return func
+end
+
+"""String macro version of parse_function :: f"<equation>"."""
+macro f_str(s)
+    parse_function(s)
 end
