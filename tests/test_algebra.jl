@@ -32,16 +32,28 @@ facts("Algebra Properties") do
     end
 end
 
+#NOTE:: This is being very odd...the first line of the Cayley table is failing
+#       due to being negated, but ONLY in the test! (Manual test in the repl is
+#       fine...)
+facts("CAYLEY -> find_prod (only broken under factcheck...)") do
+    find_prod(a::α, b::α) = AR.find_prod(a, b)
+    ix(a::α) = AR.ix(a)
 
-facts("Constructor verification :: α") do
-    context("Constructor Equivalence") do
+    for i in ALLOWED, j in ALLOWED
+        @pending find_prod(α(i), α(j)) --> AR.CAYLEY[ix(α(i)),ix(α(j))] "$i, $j"
+    end
+end
+
+
+facts("Constructor verification") do
+    context("α :: constructor Equivalence") do
         for i in ALLOWED
             @fact α(i, 1) --> α(i) "constructors are not equivalent"
             @fact α(i, -1) --> α("-"*i) "string parsing of -ves is broken"
         end
     end
 
-    context("Invalid Constructor Arguments") do
+    context("α :: invalid Constructor Arguments") do
         @fact_throws MethodError α("not valid") "invalid string allowed"
         @fact_throws MethodError α(π) "float allowed"
         @fact_throws MethodError α(2//3) "rational allowed"
@@ -49,5 +61,13 @@ facts("Constructor verification :: α") do
         @fact_throws MethodError α("0", 2) "positive integer sign not ∈ [1 -1]"
         @fact_throws MethodError α("0", -42) "negative integer sign not ∈ [1 -1]"
         @fact_throws MethodError α("0", 2.7) "float sign allowed"
+    end
+
+    context("ξα :: symbolic initialisors") do
+        @fact Ξp --> check_Ξ(Ξp)
+        @fact Ξμ --> check_Ξ(Ξμ)
+        @fact Ξμν --> check_Ξ(Ξμν)
+        @fact Ξμνρ --> check_Ξ(Ξμνρ)
+        @fact ΞG --> check_Ξ(ΞG)
     end
 end

@@ -79,26 +79,29 @@ symbolic representations of the general multi-vectors are provided below.
 """
 abstract ξα
 
-type symbolic_ξα
+immutable symbolic_ξα <: ξα
     alpha::α
-    xi::Symbol
+    xi::String  # So we can more easily modify it
     wrt::Set{α}
 
     """Symbols track the initial component and differentiate wrt everything"""
     function symbolic_ξα(alpha::α)
-        sym = Symbol("ξ" * alpha.index)
+        xi = "ξ" * alpha.index
         wrt = Set([α("0"), α("1"), α("2"), α("3")])
-        new(alpha, sym, wrt)
+        new(alpha, xi, wrt)
+    end
+    function symbolic_ξα(alpha::α, xi::String, wrt::Set{α})
+        new(alpha, xi, wrt)
     end
 end
 
-type function_ξα
+type function_ξα <: ξα
     alpha::α
     xi::Expr
     wrt::Set{α}
 end
 
-type array_ξα
+type array_ξα <: ξα
     alpha::α
     xi::Array{Float64}
     wrt::Set{α}
@@ -109,11 +112,6 @@ typealias AR_pair ξα
 typealias symbolic_AR_pair symbolic_ξα
 typealias function_AR_pair function_ξα
 typealias array_AR_pair array_ξα
-
-# Only one vector type
-# TODO:: work out how to validate uniquness of α values
-typealias Ξ Vector{ξα}
-typealias xi Ξ
 
 
 ###############################
@@ -126,23 +124,26 @@ show(io::IO, j::ξα) = print(io, "$(j.alpha) $(j.xi)")
 ###################################################
 # .: Initialisors for the general multivectors :. #
 ###################################################
-Ξp()   = [symbolic_ξα(α("p"))]
-Ξμ()   = [symbolic_ξα(α(a)) for a in "0123"]
-Ξμν()  = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 2]
-Ξμνρ() = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 3]
-ΞG()   = [symbolic_ξα(α(a)) for a in ALLOWED]
+Ξp   = [symbolic_ξα(α("p"))]
+Ξμ   = [symbolic_ξα(α(a)) for a in ["0", "1", "2", "3"]]
+Ξμν  = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 2]
+Ξμνρ = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 3]
+ΞG   = [symbolic_ξα(α(a)) for a in ALLOWED]
 
 # Non-unicode versions
-xi_1() = Ξμ()
-xi_2() = Ξμν()
-xi_3() = Ξμνρ()
-xi_G() = ΞG()
+xi_p = Ξp
+xi_1 = Ξμ
+xi_2 = Ξμν
+xi_3 = Ξμνρ
+xi_G = ΞG
 
 """Validator for custom Ξ definitions"""
-function Ξ(vec::Vector{ξα})
-    length(Set(v.alpha for v in vec)) < length(vec) && throw(error("Repeated α in Ξ"))
+function check_Ξ(vec::Vector)
+    length(Set(v.alpha for v in vec)) < length(vec) && error("Repeated α in Ξ")
     return vec
 end
+
+check_xi(vec::Vector) = check_Ξ(vec)
 
 
 ##########################
@@ -224,8 +225,8 @@ end
 # .: The pre-computed Cayley table and helper functions :. #
 ############################################################
 const CAYLEY = permutedims(
-    [find_prod(α(i), α(j)) for j in ALLOWED, i in ALLOWED],
-    [2,1]
+    [find_prod(α(i), α(j)) for i in ALLOWED, j in ALLOWED],
+    [1,2]
 )
 
 """Helper to quickly find an α in the Cayley table"""
@@ -240,7 +241,8 @@ extract_sign(a::α) = (a.sign == -1) ? (α(a.index, 1), -1) : (a, 1)
 ################################
 """Lookup in the Cayley table and determine the new sign"""
 function *(i::α, j::α)
-    prod = CAYLEY[ix(i),ix(j)]
+    #prod = CAYLEY[ix(i),ix(j)]
+    prod = find_prod(i,j)
     prod.sign *= i.sign * j.sign
     return prod
 end
@@ -337,9 +339,11 @@ end
 if DIVISION_TYPE == "by"
     div(comp::ξα, a::α) = comp / a
     div(i::ξα, j::ξα) = i / j
+    div(i::α, j::α) = i / j
 elseif DIVISION_TYPE == "into"
     div(comp::ξα, a::α) = a \ comp
     div(i::ξα, j::ξα) = j \ i
+    div(i::α, j::α) = j \ i
 else
     throw(ArgumentError("Invalid division type: $DIVISION_TYPE"))
 end

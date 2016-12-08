@@ -32,8 +32,14 @@ using Colors
 # .: Exported types and methods :. #
 ####################################
 export  α, alpha,
-        AR_pair,
-        ξα, xi_component,
+        ξα, AR_pair,
+        symbolic_ξα, symbolic_AR_pair,
+        function_ξα, function_AR_pair,
+        array_ξα, array_AR_pair,
+        check_Ξ, check_xi,
+
+        Ξ, xi,
+        Ξp, xi_p,
         Ξ, xi,
         ΞG, xi_G,
         Ξμ, xi_1,
@@ -47,7 +53,6 @@ export  α, alpha,
         by_α,
         show_by_α,
 
-        func_component,
         @f_str,
 
         convert_cayley,

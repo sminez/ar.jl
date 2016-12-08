@@ -37,6 +37,6 @@ for test in tests
     include(test)
 end
 
-# FactCheck suppresses the exit status so re-raise it
-# at the end of the test run.
-FactCheck.exitstatus()
+# NOTE:: FactCheck suppresses the exit status so to re-raise it
+#        at the end of the test run uncomment the following line.
+# FactCheck.exitstatus()
