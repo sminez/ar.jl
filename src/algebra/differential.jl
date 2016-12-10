@@ -172,7 +172,9 @@ function by_∇(vec::Vector{symbolic_ξα}, level=1)
                 end
 
                 curl_component = symbolic_ξ("∇xΞ$group_name")
-                curl_α = α(Symbol(group_name), sign)
+                first_α = curl_elements[1][1].alpha
+                α_group = get(α_TO_GROUP, first_α.index, first_α.index)
+                curl_α = α(Symbol(α_group), sign)
                 push!(output, symbolic_ξα(curl_α, curl_component))
                 filter!(x -> !(x in [e[1] for e in curl_elements]), components)
             end
