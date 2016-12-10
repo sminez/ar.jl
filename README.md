@@ -41,8 +41,22 @@ the Cayley Table for the algebra as the parameters are modified.
 --------------------------------------------------------------------------------
 
 ### Links and Reading for Julia
-* [Official Docs](http://docs.julialang.org/en/release-0.5/manual/documentation/)
+* [Official Docs](http://docs.julialang.org/en/release-0.5/manual/)
 * [WikiBook Tutorial](https://en.wikibooks.org/wiki/Introducing_Julia/)
 * [Unit Testing in Julia](http://docs.julialang.org/en/release-0.5/stdlib/test/)
 * [Gadfly Plotting Library](http://gadflyjl.org/stable/index.html)
 * [Static Compilation](http://juliacomputing.com/blog/2016/02/09/static-julia.html)
+
+### Selections from the docs
+* [Style Guide](http://docs.julialang.org/en/release-0.5/manual/style-guide/)
+* [Essentials](http://docs.julialang.org/en/release-0.5/stdlib/base/)
+* [Collections](http://docs.julialang.org/en/release-0.5/stdlib/collections/)
+* [Mathematics](http://docs.julialang.org/en/release-0.5/stdlib/math/)
+* [Arrays](http://docs.julialang.org/en/release-0.5/stdlib/arrays/)
+* [Strings](http://docs.julialang.org/en/release-0.5/stdlib/strings/)
+* [Workflow Tips](http://docs.julialang.org/en/release-0.5/manual/workflow-tips/)
+* [Performance Tips](http://docs.julialang.org/en/release-0.5/manual/performance-tips/)
+* [Streams & Networking](http://docs.julialang.org/en/release-0.5/manual/networking-and-streams/)
+* [Parallel Processing](http://docs.julialang.org/en/release-0.5/manual/parallel-computing/)
+* [Interacting With The System Shell](http://docs.julialang.org/en/release-0.5/manual/running-external-programs/)
+* [Packages](http://docs.julialang.org/en/release-0.5/manual/packages/)
