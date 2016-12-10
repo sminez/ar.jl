@@ -56,17 +56,30 @@ end
 # Non-unicode version
 typealias alpha α
 
-"""αs are equal if their indices and signs are equal"""
 ==(i::α, j::α) = (i.index == j.index) && (i.sign == j.sign)
-"""negation swaps the sign"""
 -(a::α) = α(a.index, (-1 * a.sign))
+
+
+"""A simple representation of a ξ component to manipulate symbolically"""
+type symbolic_ξ
+    val::Symbol
+    unit::String
+    partials::Vector{α}
+
+    # TODO:: provide some validation on s
+    symbolic_ξ(s::String, g::String) = new(Symbol(s), g, Vector{α}())
+    symbolic_ξ(a::α) = new(Symbol("ξ" * a.index), a.index, Vector{α}())
+    symbolic_ξ(a::α, p::Vector{α}) = new(Symbol("ξ" * a.index), a.index, p)
+    symbolic_ξ(s::Symbol, u::String, p::Vector{α}) = new(s, u, p)
+end
+
+==(i::symbolic_ξ, j::symbolic_ξ) = (i.val == j.val) && (i.partials == j.partials)
 
 
 ################################
 # .: Vectors and components :. #
 ################################
-"""
-__ξα vector components__
+"""__ξα vector components__
 (component, alpha) pairs are stored as ξα data structures that also keep track
 of which partial derivaties we need to caclulate.
 This _must_ be specified directly in the case of a floating point array representing
@@ -81,19 +94,23 @@ abstract ξα
 
 immutable symbolic_ξα <: ξα
     alpha::α
-    xi::String  # So we can more easily modify it
+    xi::symbolic_ξ
     wrt::Set{α}
 
     """Symbols track the initial component and differentiate wrt everything"""
     function symbolic_ξα(alpha::α)
-        xi = "ξ" * alpha.index
-        wrt = Set([α("0"), α("1"), α("2"), α("3")])
+        xi = symbolic_ξ(alpha)
+        wrt = Set([α(i) for i in ["0","1","2","3"]])
         new(alpha, xi, wrt)
     end
-    function symbolic_ξα(alpha::α, xi::String, wrt::Set{α})
-        new(alpha, xi, wrt)
+
+    function symbolic_ξα(alpha::α, xi::symbolic_ξ)
+        new(alpha, xi, Set([α(i) for i in ["0","1","2","3"]]))
     end
 end
+
+==(i::ξα, j::ξα) = (i.alpha == j.alpha)&&(i.xi == j.xi)&&(i.wrt == j.wrt)
+
 
 type function_ξα <: ξα
     alpha::α
@@ -117,8 +134,18 @@ typealias array_AR_pair array_ξα
 ###############################
 # .: Formatting & printing :. #
 ###############################
-show(io::IO, a::α) = print(io, "$(a.sign > 0 ? "" : "-")α$(a.index)")
-show(io::IO, j::ξα) = print(io, "$(j.alpha) $(j.xi)")
+function show(io::IO, a::α)
+    print(io, "$(a.sign > 0 ? "" : "-")α$(a.index)")
+end
+
+function show(io::IO, j::symbolic_ξ)
+    print(io, "$(join(["∂"*p.index for p in reverse(j.partials)]))$(j.val)")
+    #print(io, "$(join(["∂"*p.index for p in j.partials]))ξ$(j.initial.index)")
+end
+
+function show(io::IO, j::ξα)
+    print(io, "$(j.alpha) $(j.xi)")
+end
 
 
 ###################################################
@@ -149,9 +176,7 @@ check_xi(vec::Vector) = check_Ξ(vec)
 ##########################
 # .: Operations on αs :. #
 ##########################
-"""
-__find_prod__
-
+"""__find_prod__
 Pre-compute the product of two αs in the algebra by first checking for special
 case such as multiplication by αp and squaring and then using the set of rules
 defined above to pop and eliminate indices in order to determine the final
@@ -235,29 +260,30 @@ ix(a::α) = find(μ -> μ == a.index, ALLOWED)[1]
 """Helper to aid in transferring sign information from αs to ξs"""
 extract_sign(a::α) = (a.sign == -1) ? (α(a.index, 1), -1) : (a, 1)
 
+"""Find the multiplicative inverse of an α element"""
+inv(a::α) = α(a.index, (a^2).sign * a.sign)
 
 ################################
 # .: Operations on αs alone :. #
 ################################
-"""Lookup in the Cayley table and determine the new sign"""
+#= NOTE:: This version should be faster as it is a memoisation of find_prod
+          but I am getting some very odd behaviour when i = αp that I can't
+          work out so I am simply running everything through find_prod for now.
+
 function *(i::α, j::α)
-    #prod = CAYLEY[ix(i),ix(j)]
-    prod = find_prod(i,j)
+    prod = CAYLEY[ix(i),ix(j)]
     prod.sign *= i.sign * j.sign
     return prod
 end
+=#
+"""Find the product of two α values"""
+*(i::α, j::α) = find_prod(i, j)
 
 """Find the inverse of the first argument and then multiply"""
-function \(i::α, j::α)
-    i_inverse = α(i.index, (i * i).sign * i.sign)
-    return i_inverse * j
-end
+\(i::α, j::α) = inv(i) * j
 
 """Find the inverse of the second argument and then multiply"""
-function /(i::α, j::α)
-    j_inverse = α(j.index, (j * j).sign * j.sign)
-    return i * j_inverse
-end
+/(i::α, j::α) = i * inv(j)
 
 
 ###########################

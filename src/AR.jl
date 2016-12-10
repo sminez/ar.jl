@@ -12,7 +12,7 @@ calculations.
 As in the convention used in the theory, greek indices run 0,1,2,3
 and latin indices run 1,2,3.
 =#
-VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
+VERSION >= v"0.4" && __precompile__(true)
 
 ##########################################
 #= Calculating with Absolute Relativity =#
@@ -32,6 +32,7 @@ using Colors
 # .: Exported types and methods :. #
 ####################################
 export  α, alpha,
+        symbolic_ξ,
         ξα, AR_pair,
         symbolic_ξα, symbolic_AR_pair,
         function_ξα, function_AR_pair,
@@ -51,6 +52,7 @@ export  α, alpha,
         Dμ, D_mu,
         ∇i, del_i,
         by_α,
+        by_∇,
         show_by_α,
 
         @f_str,
