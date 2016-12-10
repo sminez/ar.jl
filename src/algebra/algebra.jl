@@ -22,6 +22,7 @@ manipulations of elements in the algebra.
 ####################
 const ALLOWED = ["p","0","1","2","3","10","20","30","23",
                  "31","12","023","031","012","123","0123"]
+const ALLOWED_GROUPS = [Symbol(g) for g in ["p","0","i","i0","jk","0jk","123","0123"]]
 const TARGETS = Dict([(Set(a), a) for a in ALLOWED])
 const METRIC = Dict(zip("0123", [1 -1 -1 -1]))
 const DIVISION_TYPE = "into"  # One of "by" or "into"
@@ -45,7 +46,13 @@ type α
         sign = '-' in index ? -1 : 1
         val = sign > 0 ? index : index[2:end]
         val in ALLOWED || throw(TypeError("invalid α: $index"))
-        α(val, sign)
+        new(val, sign)
+    end
+
+    function α(group::Symbol, sign::Integer)
+        sign in [1, -1]  || error("invalid α: $index, $sign")
+        group in ALLOWED_GROUPS || error("invalid α: $group, $sign")
+        new(string(group), sign)
     end
 
     function α(a::α)
@@ -68,6 +75,7 @@ type symbolic_ξ
 
     # TODO:: provide some validation on s
     symbolic_ξ(s::String, g::String) = new(Symbol(s), g, Vector{α}())
+    symbolic_ξ(s::String) = new(Symbol(s), s, Vector{α}())
     symbolic_ξ(a::α) = new(Symbol("ξ" * a.index), a.index, Vector{α}())
     symbolic_ξ(a::α, p::Vector{α}) = new(Symbol("ξ" * a.index), a.index, p)
     symbolic_ξ(s::Symbol, u::String, p::Vector{α}) = new(s, u, p)
@@ -255,7 +263,7 @@ const CAYLEY = permutedims(
 )
 
 """Helper to quickly find an α in the Cayley table"""
-ix(a::α) = find(μ -> μ == a.index, ALLOWED)[1]
+ix(a::α) = findin(ALLOWED, [a.index])[1]
 
 """Helper to aid in transferring sign information from αs to ξs"""
 extract_sign(a::α) = (a.sign == -1) ? (α(a.index, 1), -1) : (a, 1)
