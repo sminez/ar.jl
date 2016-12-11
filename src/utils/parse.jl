@@ -13,22 +13,22 @@ computed.
 const UNITS = Dict(zip("txyz", [α("0"), α("1"), α("2"), α("3")]))
 
 
-"""
-__f"αμν[<function>]" strings__
-Parse a string of the form `f"αμν[f(t,x,y,z) _+_ g(t,x,y,z)]` into an
+""" __f_strings__
+Parse a string of the form f"αμν[f(t,x,y,z) _+_ g(t,x,y,z)] into an
 internal data structure that can be used to perform calculations.
 
-_Present limitations_
-The function must be expressed as a linear sum of bracketed terms, each preceeded
-by an α value. The terms must be separated by `_+_` or `_-_` which will be applied
-to the alpha values specified before computation.
-The functions within the brackets are currently expected to be a single function
-with arguments within braces.
+Present limitations
+- The function must be expressed as a linear sum of bracketed terms, each
+  preceeded by an α value.
+- The terms must be separated by a comma and no other commas may appear in the
+  input string. (Open to suggestions for another separator!)
+- The functions within the braces are currently expected to be a single
+  function with arguments within brackets.
 
-_future work_
-Grouping of alpha terms shouldn't be too difficult: `(α10 - α23)[sin(t)]`.
-Allow for polynomial functions.
-Allow for arbitrary complexity in functions
+Future work
+- Grouping of alpha terms shouldn't be too difficult: (α10 - α23)[sin(t)].
+- Allow for polynomial functions.
+- Allow for arbitrary complexity in functions
 """
 function parse_function(s::String)
     components = split(s, r"\s?,\s?")
