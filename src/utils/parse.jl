@@ -14,7 +14,7 @@ const UNITS = Dict(zip("txyz", [α("0"), α("1"), α("2"), α("3")]))
 
 
 """ __f_strings__
-Parse a string of the form f"αμν[f(t,x,y,z) _+_ g(t,x,y,z)] into an
+Parse a string of the form α[f(t,x,y,z), α[g(t,x,y,z)] into an
 internal data structure that can be used to perform calculations.
 
 Present limitations
