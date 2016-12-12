@@ -52,6 +52,7 @@ the Cayley Table for the algebra as the parameters are modified.
 * [Essentials](http://docs.julialang.org/en/release-0.5/stdlib/base/)
 * [Collections](http://docs.julialang.org/en/release-0.5/stdlib/collections/)
 * [Mathematics](http://docs.julialang.org/en/release-0.5/stdlib/math/)
+* [Linear Algebra](http://docs.julialang.org/en/release-0.5/stdlib/linalg/)
 * [Arrays](http://docs.julialang.org/en/release-0.5/stdlib/arrays/)
 * [Strings](http://docs.julialang.org/en/release-0.5/stdlib/strings/)
 * [Workflow Tips](http://docs.julialang.org/en/release-0.5/manual/workflow-tips/)

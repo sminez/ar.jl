@@ -119,7 +119,7 @@ function replace_div(terms::Vector{symbolic_ξα}, group_name::String,
 
     if length(div_elements) == 3
         if all([d.alpha == div_elements[1].alpha for d in div_elements])
-            push!(output, to_del(div_elements, "∇Ξ•$group_name"))
+            push!(output, to_del(div_elements, "∇•Ξ$group_name"))
             filter!(x -> !(x in div_elements), terms)
         end
     end
@@ -164,7 +164,7 @@ function replace_curl(terms::Vector{symbolic_ξα}, group_name::String,
     if length(curl_elements) == 6
         sign = all(signs .== 1) ? 1 : 0
         sign = all(signs .== -1) ? -1 : sign
-        push!(output, to_del(curl_elements, "∇Ξx$group_name", sign))
+        push!(output, to_del(curl_elements, "∇xΞ$group_name", sign))
         filter!(x -> !(x in curl_elements), terms)
     end
     return (terms, output)

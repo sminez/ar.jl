@@ -298,45 +298,41 @@ end
 # .: Operations on ξαs :. #
 ###########################
 #=
-
-TODO:: Get this working with the new ξα definition
-
 NOTE:: Addition/subtraction of ξα pairs is only defined for matching αs.
 It is also deliberate that there is no definition given for multiplication
 of an ξα pair by a scalar: in accordance with the principle of Absolute
 Relativity, this is not allowed and instead we must multiply by a
 (scalar, αp) pair.
-
-function +(i::ξα, j::ξα)
+=#
+#=
+function +(i::symbolic_ξα, j::symbolic_ξα)
     (iξ, iα), (jξ, jα) = (i.xi, i.alpha), (j.xi, j.alpha)
     iα == jα || error("can only add components with the same α: $iα != $jα")
-    return (iξ+jξ, iα)
+    return symbolic_ξα(iξ+jξ, iα)
 end
 
-function -(i::ξα, j::ξα)
+function -(i::symbolic_ξα, j::symbolic_ξα)
     jξ, jα = j
-    return i + (-jξ, jα)
+    return i + symbolic_ξα(-jξ, jα)
 end
-
-function *(i::ξα, j::ξα)
-    (iξ, iα), (jξ, jα) = i, j
-    new_α, sign = extract_sign(iα*jα)
+function *(i::symbolic_ξα, j::symbolic_ξα)
+    new_α, sign = extract_sign(i.alpha*j.alpha)
     ξ = sign * iξ * jξ
-    return (ξ, new_α)
+    return symbolic_ξα(ξ, new_α)
 end
 
-function \(i::ξα, j::ξα)
+function \(i::symbolic_ξα, j::symbolic_ξα)
     (iξ, iα), (jξ, jα) = i, j
     new_α, sign = extract_sign(iα \ jα)
     ξ = sign * (iξ \ jξ)
-    return (ξ, new_α)
+    return symbolic_ξα(ξ, new_α)
 end
 
-function /(i::ξα, j::ξα)
+function /(i::symbolic_ξα, j::symbolic_ξα)
     (iξ, iα), (jξ, jα) = i, j
     new_α, sign = extract_sign(iα / jα)
     ξ = sign * (iξ / jξ)
-    return (ξ, new_α)
+    return symbolic_ξα(ξ, new_α)
 end
 =#
 
@@ -366,6 +362,11 @@ function /(i::ξα, a::α)
     new_ξα = copy(i)
     new_ξα.alpha = new_ξα.alpha / a
     return new_ξα
+end
+
+function *(i::symbolic_ξα, j::symbolic_ξα)
+    new_α = i.alpha * j.alpha
+    new_ξxi = 1# need combine terms and union the wrts
 end
 
 # Elsewhere in the code, you should use div() so that changing between the two
