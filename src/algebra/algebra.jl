@@ -22,6 +22,8 @@ manipulations of elements in the algebra.
 ####################
 const ALLOWED = ["p","0","1","2","3","10","20","30","23",
                  "31","12","023","031","012","123","0123"]
+#const ALLOWED = ["p","0123","123","0","23","31","12","023","031","012","1",
+#                 "2","3","01","02","03"]
 const ALLOWED_GROUPS = [Symbol(g) for g in ["p","0","i","i0","jk","0jk","123","0123"]]
 const TARGETS = Dict([(Set(a), a) for a in ALLOWED])
 const METRIC = Dict(zip("0123", [1 -1 -1 -1]))
@@ -117,7 +119,7 @@ immutable symbolic_ξα <: ξα
     end
 end
 
-==(i::ξα, j::ξα) = (i.alpha == j.alpha)&&(i.xi == j.xi)&&(i.wrt == j.wrt)
+==(i::ξα, j::ξα) = (i.alpha == j.alpha) && (i.xi == j.xi) && (i.wrt == j.wrt)
 
 
 type function_ξα <: ξα
@@ -148,7 +150,6 @@ end
 
 function show(io::IO, j::symbolic_ξ)
     print(io, "$(join(["∂"*p.index for p in reverse(j.partials)]))$(j.val)")
-    #print(io, "$(join(["∂"*p.index for p in j.partials]))ξ$(j.initial.index)")
 end
 
 function show(io::IO, j::ξα)
@@ -171,6 +172,7 @@ xi_1 = Ξμ
 xi_2 = Ξμν
 xi_3 = Ξμνρ
 xi_G = ΞG
+
 
 """Validator for custom Ξ definitions"""
 function check_Ξ(vec::Vector)
@@ -265,110 +267,64 @@ const CAYLEY = permutedims(
 """Helper to quickly find an α in the Cayley table"""
 ix(a::α) = findin(ALLOWED, [a.index])[1]
 
-"""Helper to aid in transferring sign information from αs to ξs"""
-extract_sign(a::α) = (a.sign == -1) ? (α(a.index, 1), -1) : (a, 1)
-
 """Find the multiplicative inverse of an α element"""
 inv(a::α) = α(a.index, (a^2).sign * a.sign)
 
 ################################
 # .: Operations on αs alone :. #
 ################################
+*(i::α, j::α) = find_prod(i, j)
+\(i::α, j::α) = inv(i) * j
+/(i::α, j::α) = i * inv(j)
+
 #= NOTE:: This version should be faster as it is a memoisation of find_prod
           but I am getting some very odd behaviour when i = αp that I can't
           work out so I am simply running everything through find_prod for now.
-
 function *(i::α, j::α)
     prod = CAYLEY[ix(i),ix(j)]
     prod.sign *= i.sign * j.sign
     return prod
 end
 =#
-"""Find the product of two α values"""
-*(i::α, j::α) = find_prod(i, j)
-
-"""Find the inverse of the first argument and then multiply"""
-\(i::α, j::α) = inv(i) * j
-
-"""Find the inverse of the second argument and then multiply"""
-/(i::α, j::α) = i * inv(j)
 
 
-###########################
-# .: Operations on ξαs :. #
-###########################
-#=
-NOTE:: Addition/subtraction of ξα pairs is only defined for matching αs.
-It is also deliberate that there is no definition given for multiplication
-of an ξα pair by a scalar: in accordance with the principle of Absolute
-Relativity, this is not allowed and instead we must multiply by a
-(scalar, αp) pair.
-=#
-#=
-function +(i::symbolic_ξα, j::symbolic_ξα)
-    (iξ, iα), (jξ, jα) = (i.xi, i.alpha), (j.xi, j.alpha)
-    iα == jα || error("can only add components with the same α: $iα != $jα")
-    return symbolic_ξα(iξ+jξ, iα)
+##########################
+# .: Operations on ξs :. #
+##########################
+function *(i::symbolic_ξ, j::symbolic_ξ)
+    val = Symbol(string(i.val) * string(j.val))
+    return symbolic_ξ(val, j.unit, j.partials)
 end
-
-function -(i::symbolic_ξα, j::symbolic_ξα)
-    jξ, jα = j
-    return i + symbolic_ξα(-jξ, jα)
-end
-function *(i::symbolic_ξα, j::symbolic_ξα)
-    new_α, sign = extract_sign(i.alpha*j.alpha)
-    ξ = sign * iξ * jξ
-    return symbolic_ξα(ξ, new_α)
-end
-
-function \(i::symbolic_ξα, j::symbolic_ξα)
-    (iξ, iα), (jξ, jα) = i, j
-    new_α, sign = extract_sign(iα \ jα)
-    ξ = sign * (iξ \ jξ)
-    return symbolic_ξα(ξ, new_α)
-end
-
-function /(i::symbolic_ξα, j::symbolic_ξα)
-    (iξ, iα), (jξ, jα) = i, j
-    new_α, sign = extract_sign(iα / jα)
-    ξ = sign * (iξ / jξ)
-    return symbolic_ξα(ξ, new_α)
-end
-=#
 
 
 #################################
 # .: Operations on ξαs and αs:. #
 #################################
-function *(i::ξα, a::α)
-    new_ξα = copy(i)
-    new_ξα.alpha = new_ξα.alpha * a
-    return new_ξα
+*(i::symbolic_ξα, a::α) = symbolic_ξα(i.alpha * a, i.xi)
+*(a::α, i::symbolic_ξα) = symbolic_ξα(a * i.alpha, i.xi)
+/(i::symbolic_ξα, a::α) = symbolic_ξα(i.alpha / a, i.xi)
+\(a::α, i::symbolic_ξα) = symbolic_ξα(a \ i.alpha, i.xi)
+
+
+###########################
+# .: Operations on ξαs :. #
+###########################
+*(i::symbolic_ξα, j::symbolic_ξα) = symbolic_ξα(i.alpha * j.alpha, i.xi * j.xi)
+
+
+###################################
+# .: Operations on Vector{ξα}s :. #
+###################################
+"""The outer product of two arbitrary length vectors, computed as the pairwise
+multiplication of the Cartesian product. (Result is a Vector)"""
+function outer_product(v1::Vector{symbolic_ξα}, v2::Vector{symbolic_ξα})
+    vec = [p[1] * p[2] for p in Iterators.product(v1, v2)]
+    # Need to then group by α!
+    return vcat([g for g in groupby(x -> x.alpha.index, vec)]...)
 end
 
-function *(a::α, i::ξα)
-    new_ξα = copy(i)
-    new_ξα.alpha = a * new_ξα.alpha
-    return new_ξα
-end
 
-function \(a::α, i::ξα)
-    new_ξα = copy(i)
-    new_ξα.alpha = a \ new_ξα.alpha
-    return new_ξα
-end
-
-function /(i::ξα, a::α)
-    new_ξα = copy(i)
-    new_ξα.alpha = new_ξα.alpha / a
-    return new_ξα
-end
-
-function *(i::symbolic_ξα, j::symbolic_ξα)
-    new_α = i.alpha * j.alpha
-    new_ξxi = 1# need combine terms and union the wrts
-end
-
+################################################################################
 # Elsewhere in the code, you should use div() so that changing between the two
 # is managed by changing the value of DIVISION_TYPE in this file alone.
 if DIVISION_TYPE == "by"
