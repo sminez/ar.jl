@@ -7,6 +7,7 @@
     Plotting is being done using Gadfly:
         http://gadflyjl.org/stable/index.html
 =#
+#=
 const MUTED_AR_colors = [
     Colors.RGB(a/255,b/255,c/255)
     for (a,b,c) in [
@@ -22,6 +23,22 @@ const MUTED_AR_colors = [
         (118,113,143),(156,142,173),(180,155,191),(76,72,97),
         # yellow 2
         (219,170,86)
+    ]
+]
+=#
+const MUTED_AR_colors = [
+    Colors.RGB(a/255,b/255,c/255)
+    for (a,b,c) in [
+        # yellow 1
+        (219,199,143), (219,170,86),(76,72,97),(135,46,46),
+        # blues
+        (74,119,143),(111,160,176),(143,181,191),
+        # purples
+        (118,113,143),(156,142,173),(180,155,191),
+        # reds
+        (189,68,66),(214,104,71),(217,142,102),
+        # greens
+        (73,140,107),(132,179,148),(159,196,160)
     ]
 ]
 
