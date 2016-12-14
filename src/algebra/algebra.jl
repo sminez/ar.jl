@@ -22,12 +22,12 @@ manipulations of elements in the algebra.
 ####################
 #const ALLOWED = ["p","0","1","2","3","10","20","30","23",
 #                 "31","12","023","031","012","123","0123"]
-const ALLOWED = ["p","0123","123","0","23","31","12","023","031","012","1",
-                 "2","3","10","20","30"]
+const ALLOWED = ["p","23","31","12","0","023","031","012",
+                 "123","1","2","3","0123","01","02","03"]
 const ALLOWED_GROUPS = [Symbol(g) for g in ["p","0","i","i0","jk","0jk","123","0123"]]
 const TARGETS = Dict([(Set(a), a) for a in ALLOWED])
-const METRIC = Dict(zip("0123", [1 -1 -1 -1]))
-const DIVISION_TYPE = "into"  # One of "by" or "into"
+const METRIC = Dict(zip("0123", [-1 1 1 1]))
+const DIVISION_TYPE = "by"  # One of "by" or "into"
 
 
 #######################
