@@ -74,15 +74,25 @@ __convert_cayley__
 
 Change the α values in CAYLEY into alternate formats for visualisation
 """
-function convert_cayley(output="indices")
+function convert_cayley(output="indices", op=:*, i0=true)
+    if i0
+        allowed = ALLOWED
+    else
+        allowed = vcat(ALLOWED[1:end-3], ["01", "02", "03"])
+    end
+    cayley = permutedims(
+        eval(parse("[α(i) $op α(j) for i in $allowed, j in $allowed]")),
+        [1,2]
+    )
+
     if output == "indices"
-        return CAYLEY
+        return cayley
     elseif output == "strindices"
-        return [[a.index for a in CAYLEY[i,:]] for i in 1:16]
+        return [[a.index for a in cayley[i,:]] for i in 1:16]
     elseif output == "colmap"
-        return [[ix(a) for a in CAYLEY[i,:]] for i in 1:16]
+        return [[ix(a) for a in cayley[i,:]] for i in 1:16]
     elseif output == "sign"
-        return [[a.sign for a in CAYLEY[i,:]] for i in 1:16]
+        return [[a.sign for a in cayley[i,:]] for i in 1:16]
     else
         error("Invalid output specification")
     end
@@ -95,8 +105,9 @@ This is a quick and dirty way to print out the Cayley table in
 a couple of different ways so that it can be pasted into excel
 for visualising and looking at properties such as sign and symmetry.
 """
-function print_cayley(output="indices", headers=true)
-    data = convert_cayley(output)
+function print_cayley(output="indices", op=:*, i0=true, headers=true)
+    data = convert_cayley(output, op, i0)
+    # TODO:: fix headers for 0i
     headers && println(",$(join(CAYLEY[1,:], ","))")
     for i in 1:16
         c = data[i,:]
