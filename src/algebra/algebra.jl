@@ -15,6 +15,24 @@ manipulations of elements in the algebra.
     "All elements square to either +αp or -αp"
 (3)   αμν == -ανμ
     "Adjacent indices can be popped by negating."
+
+
+I am converting the current product into an array of integers in order
+to allow for the different orderings of each final product in a flexible
+way. Ordering is a mapping of index (0,1,2,3) to position in the final
+product. This should be stable regardless of how we define the 16
+elements of the algebra.
+
+The algorithm makes use of the fact that for any ordering we can
+dermine the whether the total number of pops is odd or even by looking
+at the first element alone and then recursing on the rest of the
+ordering as a sub-problem.
+If the final position of the first element is even then it will take an
+odd number of pops to correctly position it. We can then look only at
+the remaining elements and re-label them with indices 1->(n-1) and
+repeat the process until we are done.
+NOTE:: I proved this by brute force. (i.e. listing all options and
+showing that the proposition holds...!)
 =#
 
 ####################
@@ -224,30 +242,12 @@ function find_prod(i::α, j::α, metric=METRIC, allowed=ALLOWED)
     # If everything cancelled then i == j and we are left with αp (r-point)
     length(components) == 0 && return α("p", sign)
 
-    # Rule (3) :: Sorting of elements via bubble sort to track pops
+    # Rule (3) :: Popping to the correct order
     target = targets[Set(components)]
 
     # Allow for immediate return if the product is already in the correct order
     target == components && return α(target, sign)
 
-    #=
-        I am converting the current product into an array of integers in order
-        to allow for the different orderings of each final product in a flexible
-        way. Ordering is a mapping of index (0,1,2,3) to position in the final
-        product. This should be stable regardless of how we define the 16
-        elements of the algebra.
-
-        The algorithm makes use of the fact that for any ordering we can
-        dermine the whether the total number of pops is odd or even by looking
-        at the first element alone and then recursing on the rest of the
-        ordering as a sub-problem.
-        If the final position of the first element is even then it will take an
-        odd number of pops to correctly position it. We can then look only at
-        the remaining elements and re-label them with indices 1->(n-1) and
-        repeat the process until we are done.
-        NOTE:: I proved this by brute force. (i.e. listing all options and
-        showing that the proposition holds...!)
-    =#
     ordering = Dict([(c,i) for (i,c) in enumerate(target)])
     current = [ordering[c] for c in components]
     while length(current) > 0
