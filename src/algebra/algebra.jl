@@ -15,16 +15,35 @@ manipulations of elements in the algebra.
     "All elements square to either +αp or -αp"
 (3)   αμν == -ανμ
     "Adjacent indices can be popped by negating."
+
+
+I am converting the current product into an array of integers in order
+to allow for the different orderings of each final product in a flexible
+way. Ordering is a mapping of index (0,1,2,3) to position in the final
+product. This should be stable regardless of how we define the 16
+elements of the algebra.
+
+The algorithm makes use of the fact that for any ordering we can
+dermine the whether the total number of pops is odd or even by looking
+at the first element alone and then recursing on the rest of the
+ordering as a sub-problem.
+If the final position of the first element is even then it will take an
+odd number of pops to correctly position it. We can then look only at
+the remaining elements and re-label them with indices 1->(n-1) and
+repeat the process until we are done.
+NOTE:: I proved this by brute force. (i.e. listing all options and
+showing that the proposition holds...!)
 =#
 
 ####################
 # .: Parameters :. #
 ####################
-const ALLOWED = ["p","0","1","2","3","10","20","30","23",
-                 "31","12","023","031","012","123","0123"]
+#const ALLOWED = ["p","0","1","2","3","10","20","30","23",
+#                 "31","12","023","031","012","123","0123"]
+const ALLOWED = ["p","23","31","12","0","023","031","012",
+                 "123","1","2","3","0123","01","02","03"]
 const ALLOWED_GROUPS = [Symbol(g) for g in ["p","0","i","i0","jk","0jk","123","0123"]]
-const TARGETS = Dict([(Set(a), a) for a in ALLOWED])
-const METRIC = Dict(zip("0123", [1 -1 -1 -1]))
+const METRIC = [-1 1 1 1]
 const DIVISION_TYPE = "into"  # One of "by" or "into"
 
 
@@ -38,14 +57,14 @@ type α
 
     function α(index::String, sign::Integer)
         sign in [1, -1]  || throw(TypeError("invalid α: $index, $sign"))
-        index in ALLOWED || throw(TypeError("invalid α: $index, $sign"))
+        #index in ALLOWED || throw(TypeError("invalid α: $index, $sign"))
         new(index, Int8(sign))
     end
 
     function α(index::String)
         sign = '-' in index ? -1 : 1
         val = sign > 0 ? index : index[2:end]
-        val in ALLOWED || throw(TypeError("invalid α: $index"))
+        #val in ALLOWED || throw(TypeError("invalid α: $index"))
         new(val, sign)
     end
 
@@ -117,7 +136,7 @@ immutable symbolic_ξα <: ξα
     end
 end
 
-==(i::ξα, j::ξα) = (i.alpha == j.alpha)&&(i.xi == j.xi)&&(i.wrt == j.wrt)
+==(i::ξα, j::ξα) = (i.alpha == j.alpha) && (i.xi == j.xi) && (i.wrt == j.wrt)
 
 
 type function_ξα <: ξα
@@ -148,7 +167,6 @@ end
 
 function show(io::IO, j::symbolic_ξ)
     print(io, "$(join(["∂"*p.index for p in reverse(j.partials)]))$(j.val)")
-    #print(io, "$(join(["∂"*p.index for p in j.partials]))ξ$(j.initial.index)")
 end
 
 function show(io::IO, j::ξα)
@@ -172,6 +190,7 @@ xi_2 = Ξμν
 xi_3 = Ξμνρ
 xi_G = ΞG
 
+
 """Validator for custom Ξ definitions"""
 function check_Ξ(vec::Vector)
     length(Set(v.alpha for v in vec)) < length(vec) && error("Repeated α in Ξ")
@@ -193,7 +212,13 @@ _NOTE_:: The implementation of this is based on the paramaters at the top of thi
        file (algebra.jl). These can be modified in order to change the algebra
        and see how the resulting equations are affected.
 """
-function find_prod(i::α, j::α)
+function find_prod(i::α, j::α, metric=METRIC, allowed=ALLOWED)
+    # set the paramaters being used
+    # TODO:: Once the paramaters of the algebra have been finalised this should
+    #        be moved back to the top of the file.
+    metric = Dict(zip("0123", metric))
+    targets = Dict([(Set(a), a) for a in allowed])
+
     # Rule (1) :: Multiplication by αp is idempotent
     i.index == "p" && return α(j.index, (i.sign * j.sign))
     j.index == "p" && return α(i.index, (i.sign * j.sign))
@@ -210,37 +235,19 @@ function find_prod(i::α, j::α)
         # Only a total odd number of pops will negate
         sign *= (n_pops % 2 == 1 ? -1 : 1)
         # Cancelling unit elements negates based on the metric being used
-        sign *= METRIC[repeated]
+        sign *= metric[repeated]
         components = String(filter(μ -> μ != repeated, [c for c in components]))
     end
 
     # If everything cancelled then i == j and we are left with αp (r-point)
     length(components) == 0 && return α("p", sign)
 
-    # Rule (3) :: Sorting of elements via bubble sort to track pops
-    target = TARGETS[Set(components)]
+    # Rule (3) :: Popping to the correct order
+    target = targets[Set(components)]
 
     # Allow for immediate return if the product is already in the correct order
     target == components && return α(target, sign)
 
-    #=
-        I am converting the current product into an array of integers in order
-        to allow for the different orderings of each final product in a flexible
-        way. Ordering is a mapping of index (0,1,2,3) to position in the final
-        product. This should be stable regardless of how we define the 16
-        elements of the algebra.
-
-        The algorithm makes use of the fact that for any ordering we can
-        dermine the whether the total number of pops is odd or even by looking
-        at the first element alone and then recursing on the rest of the
-        ordering as a sub-problem.
-        If the final position of the first element is even then it will take an
-        odd number of pops to correctly position it. We can then look only at
-        the remaining elements and re-label them with indices 1->(n-1) and
-        repeat the process until we are done.
-        NOTE:: I proved this by brute force. (i.e. listing all options and
-        showing that the proposition holds...!)
-    =#
     ordering = Dict([(c,i) for (i,c) in enumerate(target)])
     current = [ordering[c] for c in components]
     while length(current) > 0
@@ -265,110 +272,64 @@ const CAYLEY = permutedims(
 """Helper to quickly find an α in the Cayley table"""
 ix(a::α) = findin(ALLOWED, [a.index])[1]
 
-"""Helper to aid in transferring sign information from αs to ξs"""
-extract_sign(a::α) = (a.sign == -1) ? (α(a.index, 1), -1) : (a, 1)
-
 """Find the multiplicative inverse of an α element"""
 inv(a::α) = α(a.index, (a^2).sign * a.sign)
 
 ################################
 # .: Operations on αs alone :. #
 ################################
+*(i::α, j::α) = find_prod(i, j)
+\(i::α, j::α) = inv(i) * j
+/(i::α, j::α) = i * inv(j)
+
 #= NOTE:: This version should be faster as it is a memoisation of find_prod
           but I am getting some very odd behaviour when i = αp that I can't
           work out so I am simply running everything through find_prod for now.
-
 function *(i::α, j::α)
     prod = CAYLEY[ix(i),ix(j)]
     prod.sign *= i.sign * j.sign
     return prod
 end
 =#
-"""Find the product of two α values"""
-*(i::α, j::α) = find_prod(i, j)
-
-"""Find the inverse of the first argument and then multiply"""
-\(i::α, j::α) = inv(i) * j
-
-"""Find the inverse of the second argument and then multiply"""
-/(i::α, j::α) = i * inv(j)
 
 
-###########################
-# .: Operations on ξαs :. #
-###########################
-#=
-NOTE:: Addition/subtraction of ξα pairs is only defined for matching αs.
-It is also deliberate that there is no definition given for multiplication
-of an ξα pair by a scalar: in accordance with the principle of Absolute
-Relativity, this is not allowed and instead we must multiply by a
-(scalar, αp) pair.
-=#
-#=
-function +(i::symbolic_ξα, j::symbolic_ξα)
-    (iξ, iα), (jξ, jα) = (i.xi, i.alpha), (j.xi, j.alpha)
-    iα == jα || error("can only add components with the same α: $iα != $jα")
-    return symbolic_ξα(iξ+jξ, iα)
+##########################
+# .: Operations on ξs :. #
+##########################
+function *(i::symbolic_ξ, j::symbolic_ξ)
+    val = Symbol(string(i.val) * string(j.val))
+    return symbolic_ξ(val, j.unit, j.partials)
 end
-
-function -(i::symbolic_ξα, j::symbolic_ξα)
-    jξ, jα = j
-    return i + symbolic_ξα(-jξ, jα)
-end
-function *(i::symbolic_ξα, j::symbolic_ξα)
-    new_α, sign = extract_sign(i.alpha*j.alpha)
-    ξ = sign * iξ * jξ
-    return symbolic_ξα(ξ, new_α)
-end
-
-function \(i::symbolic_ξα, j::symbolic_ξα)
-    (iξ, iα), (jξ, jα) = i, j
-    new_α, sign = extract_sign(iα \ jα)
-    ξ = sign * (iξ \ jξ)
-    return symbolic_ξα(ξ, new_α)
-end
-
-function /(i::symbolic_ξα, j::symbolic_ξα)
-    (iξ, iα), (jξ, jα) = i, j
-    new_α, sign = extract_sign(iα / jα)
-    ξ = sign * (iξ / jξ)
-    return symbolic_ξα(ξ, new_α)
-end
-=#
 
 
 #################################
 # .: Operations on ξαs and αs:. #
 #################################
-function *(i::ξα, a::α)
-    new_ξα = copy(i)
-    new_ξα.alpha = new_ξα.alpha * a
-    return new_ξα
+*(i::symbolic_ξα, a::α) = symbolic_ξα(i.alpha * a, i.xi)
+*(a::α, i::symbolic_ξα) = symbolic_ξα(a * i.alpha, i.xi)
+/(i::symbolic_ξα, a::α) = symbolic_ξα(i.alpha / a, i.xi)
+\(a::α, i::symbolic_ξα) = symbolic_ξα(a \ i.alpha, i.xi)
+
+
+###########################
+# .: Operations on ξαs :. #
+###########################
+*(i::symbolic_ξα, j::symbolic_ξα) = symbolic_ξα(i.alpha * j.alpha, i.xi * j.xi)
+
+
+###################################
+# .: Operations on Vector{ξα}s :. #
+###################################
+"""The outer product of two arbitrary length vectors, computed as the pairwise
+multiplication of the Cartesian product. (Result is a Vector)"""
+function outer_product(v1::Vector{symbolic_ξα}, v2::Vector{symbolic_ξα})
+    vec = [p[1] * p[2] for p in Iterators.product(v1, v2)]
+    # Need to then group by α!
+    return vcat([g for g in groupby(x -> x.alpha.index, vec)]...)
 end
 
-function *(a::α, i::ξα)
-    new_ξα = copy(i)
-    new_ξα.alpha = a * new_ξα.alpha
-    return new_ξα
-end
 
-function \(a::α, i::ξα)
-    new_ξα = copy(i)
-    new_ξα.alpha = a \ new_ξα.alpha
-    return new_ξα
-end
-
-function /(i::ξα, a::α)
-    new_ξα = copy(i)
-    new_ξα.alpha = new_ξα.alpha / a
-    return new_ξα
-end
-
-function *(i::symbolic_ξα, j::symbolic_ξα)
-    new_α = i.alpha * j.alpha
-    new_ξxi = 1# need combine terms and union the wrts
-end
-
+################################################################################
 # Elsewhere in the code, you should use div() so that changing between the two
 # is managed by changing the value of DIVISION_TYPE in this file alone.
 if DIVISION_TYPE == "by"
