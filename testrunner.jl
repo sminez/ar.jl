@@ -9,9 +9,13 @@
     trying to check every case, if not then at least every allowed
     input type.
 =#
-using FactCheck
-include("src/AR.jl")
-using AR
+if !isdefined(:AR)
+    include("src/AR.jl")
+    using AR
+end
+if !isdefined(:FactCheck)
+    using FactCheck
+end
 
 # #######################################################
 # .: Bring in non-exported elements for use in tests :. #
