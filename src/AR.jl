@@ -32,20 +32,23 @@ using Colors
 # .: Exported types and methods :. #
 ####################################
 export  α, alpha,
-        symbolic_ξ,
+        ξ, AR_pair,
         ξα, AR_pair,
-        symbolic_ξα, symbolic_AR_pair,
-        function_ξα, function_AR_pair,
-        array_ξα, array_AR_pair,
+        function_ξα,
         check_Ξ, check_xi,
 
         Ξ, xi,
-        Ξp, xi_p,
-        Ξ, xi,
-        ΞG, xi_G,
-        Ξμ, xi_1,
-        Ξμν, xi_2,
-        Ξμνρ, xi_3,
+        Ξp, Xip,
+        ΞG, XiG,
+        Ξμ, Xi1,
+        Ξμν, Xi2,
+        Ξμνρ, Xi3,
+
+        XiM, ΞM,
+        XiT, ΞT,
+        XiA, ΞA,
+        XiE, ΞE,
+        XiG, ΞG,
 
         ∂μ, d_mu,
         ∂, partial,

@@ -6,15 +6,15 @@ manipulations of elements in the algebra.
 (NOTE:: In all notation, αμ.αν is simplified to αμν)
 
 (1)   αpμ == αμp == αμ
-    "Multiplication by αp (r-point) is idempotent. (αp is the identity)"
+      "Multiplication by αp (r-point) is idempotent. (αp is the identity)"
 (2i)  α0^2 == αp
-    "Repeated α0 indices can just be removed."
+      "Repeated α0 indices can just be removed."
 (2ii) αi^2 == -αp
-    "Repeated αi indices can be removed by negating"
+      "Repeated αi indices can be removed by negating"
 (2iii) α^2 == +-αp
-    "All elements square to either +αp or -αp"
+      "All elements square to either +αp or -αp"
 (3)   αμν == -ανμ
-    "Adjacent indices can be popped by negating."
+      "Adjacent indices can be popped by negating."
 
 
 I am converting the current product into an array of integers in order
@@ -57,14 +57,14 @@ type α
 
     function α(index::String, sign::Integer)
         sign in [1, -1]  || throw(TypeError("invalid α: $index, $sign"))
-        #index in ALLOWED || throw(TypeError("invalid α: $index, $sign"))
+        index in ALLOWED || throw(TypeError("invalid α: $index, $sign"))
         new(index, Int8(sign))
     end
 
     function α(index::String)
         sign = '-' in index ? -1 : 1
         val = sign > 0 ? index : index[2:end]
-        #val in ALLOWED || throw(TypeError("invalid α: $index"))
+        val in ALLOWED || throw(TypeError("invalid α: $index"))
         new(val, sign)
     end
 
@@ -87,20 +87,20 @@ typealias alpha α
 
 
 """A simple representation of a ξ component to manipulate symbolically"""
-type symbolic_ξ
+type ξ
     val::Symbol
     unit::String
     partials::Vector{α}
 
     # TODO:: provide some validation on s
-    symbolic_ξ(s::String, g::String) = new(Symbol(s), g, Vector{α}())
-    symbolic_ξ(s::String) = new(Symbol(s), s, Vector{α}())
-    symbolic_ξ(a::α) = new(Symbol("ξ" * a.index), a.index, Vector{α}())
-    symbolic_ξ(a::α, p::Vector{α}) = new(Symbol("ξ" * a.index), a.index, p)
-    symbolic_ξ(s::Symbol, u::String, p::Vector{α}) = new(s, u, p)
+    ξ(s::String, g::String) = new(Symbol(s), g, Vector{α}())
+    ξ(s::String) = new(Symbol(s), s, Vector{α}())
+    ξ(a::α) = new(Symbol("ξ" * a.index), a.index, Vector{α}())
+    ξ(a::α, p::Vector{α}) = new(Symbol("ξ" * a.index), a.index, p)
+    ξ(s::Symbol, u::String, p::Vector{α}) = new(s, u, p)
 end
 
-==(i::symbolic_ξ, j::symbolic_ξ) = (i.val == j.val) && (i.partials == j.partials)
+==(i::ξ, j::ξ) = (i.val == j.val) && (i.partials == j.partials)
 
 
 ################################
@@ -117,45 +117,37 @@ The intended way of creating function_ξα values is via the f-string macro defi
 in `parse.jl` in the utils directory. Helper functions for initialising the
 symbolic representations of the general multi-vectors are provided below.
 """
-abstract ξα
+abstract Abstract_ξα
 
-immutable symbolic_ξα <: ξα
+immutable ξα <: Abstract_ξα
     alpha::α
-    xi::symbolic_ξ
+    xi::ξ
     wrt::Set{α}
 
     """Symbols track the initial component and differentiate wrt everything"""
-    function symbolic_ξα(alpha::α)
-        xi = symbolic_ξ(alpha)
+    function ξα(alpha::α)
+        xi = ξ(alpha)
         wrt = Set([α(i) for i in ["0","1","2","3"]])
         new(alpha, xi, wrt)
     end
 
-    function symbolic_ξα(alpha::α, xi::symbolic_ξ)
+    function ξα(alpha::α, xi::ξ)
         new(alpha, xi, Set([α(i) for i in ["0","1","2","3"]]))
     end
 end
 
+
 ==(i::ξα, j::ξα) = (i.alpha == j.alpha) && (i.xi == j.xi) && (i.wrt == j.wrt)
 
 
-type function_ξα <: ξα
+type function_ξα <: Abstract_ξα
     alpha::α
     xi::Expr
     wrt::Set{α}
 end
 
-type array_ξα <: ξα
-    alpha::α
-    xi::Array{Float64}
-    wrt::Set{α}
-end
-
 # Non-unicode
 typealias AR_pair ξα
-typealias symbolic_AR_pair symbolic_ξα
-typealias function_AR_pair function_ξα
-typealias array_AR_pair array_ξα
 
 
 ###############################
@@ -165,7 +157,7 @@ function show(io::IO, a::α)
     print(io, "$(a.sign > 0 ? "" : "-")α$(a.index)")
 end
 
-function show(io::IO, j::symbolic_ξ)
+function show(io::IO, j::ξ)
     print(io, "$(join(["∂"*p.index for p in reverse(j.partials)]))$(j.val)")
 end
 
@@ -177,19 +169,27 @@ end
 ###################################################
 # .: Initialisors for the general multivectors :. #
 ###################################################
-Ξp   = [symbolic_ξα(α("p"))]
-Ξμ   = [symbolic_ξα(α(a)) for a in ["0", "1", "2", "3"]]
-Ξμν  = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 2]
-Ξμνρ = [symbolic_ξα(α(a)) for a in ALLOWED if length(a) == 3]
-ΞG   = [symbolic_ξα(α(a)) for a in ALLOWED]
+Ξp   = [ξα(α("p"))]
+Ξμ   = [ξα(α(a)) for a in ["0", "1", "2", "3"]]
+Ξμν  = [ξα(α(a)) for a in ALLOWED if length(a) == 2]
+Ξμνρ = [ξα(α(a)) for a in ALLOWED if length(a) == 3]
+ΞM = vcat([ξα(α("p"))], [ξα(α(a)) for a in ALLOWED if length(a) == 2 && !('0' in a)])
+ΞT = vcat([ξα(α("0"))], [ξα(α(a)) for a in ALLOWED if length(a) == 3 && '0' in a])
+ΞA = vcat([ξα(α("123"))], [ξα(α(a)) for a in ALLOWED if length(a) == 1 && !('0' in a)])
+ΞE = vcat([ξα(α("0123"))], [ξα(α(a)) for a in ALLOWED if length(a) == 2 && '0' in a])
+ΞG = [ξα(α(a)) for a in ALLOWED]
 
 # Non-unicode versions
-xi_p = Ξp
-xi_1 = Ξμ
-xi_2 = Ξμν
-xi_3 = Ξμνρ
-xi_G = ΞG
+Xip = Ξp
+Xi1 = Ξμ
+Xi2 = Ξμν
+Xi3 = Ξμνρ
 
+XiM = ΞM
+XiT = ΞT
+XiA = ΞA
+XiE = ΞE
+XiG = ΞG
 
 """Validator for custom Ξ definitions"""
 function check_Ξ(vec::Vector)
@@ -296,25 +296,25 @@ end
 ##########################
 # .: Operations on ξs :. #
 ##########################
-function *(i::symbolic_ξ, j::symbolic_ξ)
+function *(i::ξ, j::ξ)
     val = Symbol(string(i.val) * string(j.val))
-    return symbolic_ξ(val, j.unit, j.partials)
+    return ξ(val, j.unit, j.partials)
 end
 
 
 #################################
 # .: Operations on ξαs and αs:. #
 #################################
-*(i::symbolic_ξα, a::α) = symbolic_ξα(i.alpha * a, i.xi)
-*(a::α, i::symbolic_ξα) = symbolic_ξα(a * i.alpha, i.xi)
-/(i::symbolic_ξα, a::α) = symbolic_ξα(i.alpha / a, i.xi)
-\(a::α, i::symbolic_ξα) = symbolic_ξα(a \ i.alpha, i.xi)
+*(i::ξα, a::α) = ξα(i.alpha * a, i.xi)
+*(a::α, i::ξα) = ξα(a * i.alpha, i.xi)
+/(i::ξα, a::α) = ξα(i.alpha / a, i.xi)
+\(a::α, i::ξα) = ξα(a \ i.alpha, i.xi)
 
 
 ###########################
 # .: Operations on ξαs :. #
 ###########################
-*(i::symbolic_ξα, j::symbolic_ξα) = symbolic_ξα(i.alpha * j.alpha, i.xi * j.xi)
+*(i::ξα, j::ξα) = ξα(i.alpha * j.alpha, i.xi * j.xi)
 
 
 ###################################
@@ -322,7 +322,7 @@ end
 ###################################
 """The outer product of two arbitrary length vectors, computed as the pairwise
 multiplication of the Cartesian product. (Result is a Vector)"""
-function outer_product(v1::Vector{symbolic_ξα}, v2::Vector{symbolic_ξα})
+function outer_product(v1::Vector{ξα}, v2::Vector{ξα})
     vec = [p[1] * p[2] for p in Iterators.product(v1, v2)]
     # Need to then group by α!
     return vcat([g for g in groupby(x -> x.alpha.index, vec)]...)

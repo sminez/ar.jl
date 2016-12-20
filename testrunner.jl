@@ -17,7 +17,6 @@ using AR
 # .: Bring in non-exported elements for use in tests :. #
 # #######################################################
 ALLOWED = AR.ALLOWED
-TARGETS = AR.TARGETS
 METRIC = AR.METRIC
 DIVISION_TYPE = AR.DIVISION_TYPE
 units = ["0" "1" "2" "3"]

@@ -8,11 +8,11 @@ In Cartesian coordinates this is:
 ############################################
 # .: Derivative operations on Ξ vectors :. #
 ############################################
-"""__diff_ξ__ :: symbolic_ξ
+"""__diff_ξ__
 Differnetiation of a symbolic_ξ just records the operation so that we can group
 terms later or apply this calculation to a functional or numberic ξ"""
-function diff_ξ(wrt::α, j::symbolic_ξ)
-    new_ξ = symbolic_ξ(j.val, j.unit, [p for p in j.partials])
+function diff_ξ(wrt::α, j::ξ)
+    new_ξ = ξ(j.val, j.unit, [p for p in j.partials])
     push!(new_ξ.partials, wrt)
     return new_ξ
 end
@@ -27,7 +27,7 @@ NOTE:: div is being used for division here so that we can select division by or
 function ∂(component::ξα, ∂_wrt::α)
     new_α = div(component.alpha, ∂_wrt)
     new_ξ = diff_ξ(∂_wrt, component.xi)
-    return symbolic_ξα(new_α, new_ξ)
+    return ξα(new_α, new_ξ)
 end
 
 # Shorthand notation for common differential operators.
@@ -66,7 +66,7 @@ const ACW = Dict(1=>3, 2=>1, 3=>2)
 """__by_α__
 Group derivative terms according to their unit element.
 If vector_groups=true then this will group the elements into"""
-function by_α(vec::Vector{symbolic_ξα}, vector_groups=false)
+function by_α(vec::Vector{ξα}, vector_groups=false)
     sort!(vec, lt=(x,y) -> ix(x.alpha) < ix(y.alpha))
     if vector_groups
         return groupby(x -> get(α_TO_GROUP, x.alpha.index, x.alpha.index), vec)
@@ -80,23 +80,23 @@ end
 Replace the elements found by one of the replacement functions with an
 alternate form using ∇ notation.
 The replacement functions all use this as final step to do the replacement."""
-function to_del(elements::Vector{symbolic_ξα}, replacement::String, sign=0)
+function to_del(elements::Vector{ξα}, replacement::String, sign=0)
     first_α = elements[1].alpha
     α_group = get(α_TO_GROUP, first_α.index, first_α.index)
     sign = (sign != 0) ? sign : first_α.sign
     element_α = α(Symbol(α_group), sign)
-    new_component = symbolic_ξ(replacement)
-    return symbolic_ξα(element_α, new_component)
+    new_component = ξ(replacement)
+    return ξα(element_α, new_component)
 end
 
 
-function replace_grad(terms::Vector{symbolic_ξα}, group_name::String,
+function replace_grad(terms::Vector{ξα}, group_name::String,
                       group_ξs::Vector{String}, level::Integer)
-    output = Vector{symbolic_ξα}()
+    output = Vector{ξα}()
     check(j,term,∂i) = (j.unit == term.unit) && (j.partials[level].index == ∂i)
 
     for term in terms
-        grad_elements = Vector{symbolic_ξα}()
+        grad_elements = Vector{ξα}()
         for wrt in ["1","2","3"]
             elem = filter(j -> check(j.xi, term.xi, wrt), terms)
             elem != [] && push!(grad_elements, elem[1])
@@ -111,9 +111,9 @@ function replace_grad(terms::Vector{symbolic_ξα}, group_name::String,
 end
 
 
-function replace_div(terms::Vector{symbolic_ξα}, group_name::String,
+function replace_div(terms::Vector{ξα}, group_name::String,
                      group_ξs::Vector{String}, level::Integer)
-    output = Vector{symbolic_ξα}()
+    output = Vector{ξα}()
     check(i,u) = i.index == "0" ? false : group_ξs[parse(i.index)] == u
     div_elements = filter(j -> check(j.xi.partials[level], j.xi.unit), terms)
 
@@ -127,10 +127,10 @@ function replace_div(terms::Vector{symbolic_ξα}, group_name::String,
 end
 
 
-function replace_curl(terms::Vector{symbolic_ξα}, group_name::String,
+function replace_curl(terms::Vector{ξα}, group_name::String,
                       group_ξs::Vector{String}, level::Integer)
-    output = Vector{symbolic_ξα}()
-    curl_elements = Vector{symbolic_ξα}()
+    output = Vector{ξα}()
+    curl_elements = Vector{ξα}()
     signs = Vector{Integer}()
     curl_element_missing = false
     check(j,term,wrt) = (j.val == term) && (j.partials[level] == wrt)
@@ -171,13 +171,13 @@ function replace_curl(terms::Vector{symbolic_ξα}, group_name::String,
 end
 
 
-function replace_group_partials(terms::Vector{symbolic_ξα}, group_name::String,
+function replace_group_partials(terms::Vector{ξα}, group_name::String,
                                 group_ξs::Vector{String}, level::Integer)
-    output = Vector{symbolic_ξα}()
+    output = Vector{ξα}()
     check(j,term,wrt) = (j.unit == term) && (j.partials[level].index == wrt)
 
     for wrt in ["0","1","2","3"]
-        group_elements = Vector{symbolic_ξα}()
+        group_elements = Vector{ξα}()
         for term in group_ξs
             elem = filter(j->check(j.xi, term, wrt), terms)
             elem != [] && push!(group_elements, elem[1])
@@ -195,8 +195,8 @@ end
 """__by_∇__
 Attempt to identify vector derivatives in each group
 TODO:: Allow for grouping of second derivatives using the level flag"""
-function by_∇(vec::Vector{symbolic_ξα}, level=1)
-    output = Vector{symbolic_ξα}()
+function by_∇(vec::Vector{ξα}, level=1)
+    output = Vector{ξα}()
 
     for terms in by_α(vec, true)
         for (group, ξs) in ξ_GROUPS
@@ -229,7 +229,7 @@ Pretty print an α_grouped derivative. If the keyword argument `vector notation`
 is passed as true then this will attempt to group the output into conventional
 del based vector derivative notation.
 """
-function show_by_α(vec::Vector{symbolic_ξα}; vector_notation=false)
+function show_by_α(vec::Vector{ξα}; vector_notation=false)
     if vector_notation
         function vec_sort(x,y)
             ix_x = findin(ALLOWED_GROUPS, [Symbol(x.alpha.index)])[1]
