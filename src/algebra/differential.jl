@@ -114,6 +114,7 @@ end
 function replace_div(terms::Vector{ξα}, group_name::String,
                      group_ξs::Vector{String}, level::Integer)
     output = Vector{ξα}()
+    # TODO:: This check is broken for indices ∉ {0,1,2,3}...
     check(i,u) = i.index == "0" ? false : group_ξs[parse(i.index)] == u
     div_elements = filter(j -> check(j.xi.partials[level], j.xi.unit), terms)
 

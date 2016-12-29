@@ -41,9 +41,9 @@ showing that the proposition holds...!)
 #const ALLOWED = ["p","0","1","2","3","10","20","30","23",
 #                 "31","12","023","031","012","123","0123"]
 const ALLOWED = ["p","23","31","12","0","023","031","012",
-                 "123","1","2","3","0123","01","02","03"]
+                 "123","1","2","3","0123","10","20","30"]
 const ALLOWED_GROUPS = [Symbol(g) for g in ["p","0","i","i0","jk","0jk","123","0123"]]
-const METRIC = [-1 1 1 1]
+const METRIC = [1 -1 -1 -1]
 const DIVISION_TYPE = "into"  # One of "by" or "into"
 
 
@@ -56,26 +56,26 @@ type α
     sign::Int8
 
     function α(index::String, sign::Integer)
-        sign in [1, -1]  || throw(TypeError("invalid α: $index, $sign"))
-        index in ALLOWED || throw(TypeError("invalid α: $index, $sign"))
+        sign in [1, -1]  || error("invalid α: $index, $sign")
+        index in ALLOWED || error("invalid α: $index, $sign")
         new(index, Int8(sign))
     end
 
     function α(index::String)
         sign = '-' in index ? -1 : 1
         val = sign > 0 ? index : index[2:end]
-        val in ALLOWED || throw(TypeError("invalid α: $index"))
+        val in ALLOWED || error("invalid α: $index")
         new(val, sign)
     end
 
     function α(group::Symbol, sign::Integer)
         sign in [1, -1]  || error("invalid α: $index, $sign")
-        group in ALLOWED_GROUPS || error("invalid α: $group, $sign")
+        #group in ALLOWED_GROUPS || error("invalid α: $group, $sign")
         new(string(group), sign)
     end
 
     function α(a::α)
-        throw(TypeError("αs can not be initialised with another α"))
+        error("αs can not be initialised with another α")
     end
 end
 
@@ -191,14 +191,6 @@ XiA = ΞA
 XiE = ΞE
 XiG = ΞG
 
-"""Validator for custom Ξ definitions"""
-function check_Ξ(vec::Vector)
-    length(Set(v.alpha for v in vec)) < length(vec) && error("Repeated α in Ξ")
-    return vec
-end
-
-check_xi(vec::Vector) = check_Ξ(vec)
-
 
 ##########################
 # .: Operations on αs :. #
@@ -212,11 +204,11 @@ _NOTE_:: The implementation of this is based on the paramaters at the top of thi
        file (algebra.jl). These can be modified in order to change the algebra
        and see how the resulting equations are affected.
 """
-function find_prod(i::α, j::α, metric=METRIC, allowed=ALLOWED)
+function find_prod(i::α, j::α; metric=METRIC, allowed=ALLOWED)
     # set the paramaters being used
     # TODO:: Once the paramaters of the algebra have been finalised this should
     #        be moved back to the top of the file.
-    metric = Dict(zip("0123", metric))
+    metric = Dict(zip(prod([string(m) for m in 0:length(metric)-1]), metric))
     targets = Dict([(Set(a), a) for a in allowed])
 
     # Rule (1) :: Multiplication by αp is idempotent
@@ -233,7 +225,9 @@ function find_prod(i::α, j::α, metric=METRIC, allowed=ALLOWED)
         # Distance - 1 as we only need to get adjacent to the first occurance
         n_pops = second - first - 1
         # Only a total odd number of pops will negate
-        sign *= (n_pops % 2 == 1 ? -1 : 1)
+        if n_pops % 2 == 1
+            sign *= -1
+        end
         # Cancelling unit elements negates based on the metric being used
         sign *= metric[repeated]
         components = String(filter(μ -> μ != repeated, [c for c in components]))
@@ -250,7 +244,8 @@ function find_prod(i::α, j::α, metric=METRIC, allowed=ALLOWED)
 
     ordering = Dict([(c,i) for (i,c) in enumerate(target)])
     current = [ordering[c] for c in components]
-    while length(current) > 0
+    # >1 as the last element will always be in the correct position!
+    while length(current) > 1
         sign *= iseven(current[1]) ? -1 : 1
         shift!(current)
         new_order = Dict([(j,i) for (i,j) in enumerate(sort(current))])

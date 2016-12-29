@@ -23,6 +23,7 @@ module AR
 # .: Dependencies :. #
 ######################
 import Base.+, Base.-, Base.*, Base./, Base.\, Base.==, Base.show, Base.div
+using Combinatorics
 using Iterators
 using Gadfly
 using Colors
@@ -35,7 +36,6 @@ export  α, alpha,
         ξ, AR_pair,
         ξα, AR_pair,
         function_ξα,
-        check_Ξ, check_xi,
 
         Ξ, xi,
         Ξp, Xip,
@@ -53,6 +53,7 @@ export  α, alpha,
         ∂μ, d_mu,
         ∂, partial,
         Dμ, D_mu,
+        DG,
         ∇i, del_i,
         by_α,
         by_∇,
@@ -62,7 +63,8 @@ export  α, alpha,
 
         convert_cayley,
         print_cayley,
-        visualise_cayley
+        visualise_cayley,
+        visualise_ncayley
 
 
 
