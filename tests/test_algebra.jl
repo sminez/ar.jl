@@ -62,21 +62,4 @@ facts("Constructor verification") do
         @fact_throws MethodError α("0", -42) "negative integer sign not ∈ [1 -1]"
         @fact_throws MethodError α("0", 2.7) "float sign allowed"
     end
-
-    context("ξα :: symbolic initialisors") do
-        @fact Ξp --> check_Ξ(Ξp)
-        @fact Ξμ --> check_Ξ(Ξμ)
-        @fact Ξμν --> check_Ξ(Ξμν)
-        @fact Ξμνρ --> check_Ξ(Ξμνρ)
-        @fact ΞG --> check_Ξ(ΞG)
-        @fact ΞM --> check_Ξ(ΞM)
-        @fact ΞT --> check_Ξ(ΞT)
-        @fact ΞA --> check_Ξ(ΞA)
-        @fact ΞE --> check_Ξ(ΞE)
-        @fact XiG --> check_Ξ(XiG)
-        @fact XiM --> check_Ξ(XiM)
-        @fact XiT --> check_Ξ(XiT)
-        @fact XiA --> check_Ξ(XiA)
-        @fact XiE --> check_Ξ(XiE)
-    end
 end
