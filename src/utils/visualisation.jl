@@ -172,3 +172,67 @@ function visualise_cayley(;muted=true, coloured=true, dims=(2000,2000),
         return plt
     end
 end
+
+
+"""Generate the set of basis blades for a Geometric Algebra with n dimensions.
+This is a naive implementation and as such does not generate the correct ordering
+for basis blades to give a completely right or left handed system.
+(It is only intended for viewing the distribution of elements in the unsigned
+Cayley Table)"""
+function basis_blades(n::Integer)
+    basis_vecs = [string(k) for k in 0:n-1]
+    blades = vcat(["p"], basis_vecs)
+
+    for order in 2:n-1
+        for multi in combinations(basis_vecs, order)
+            push!(blades, prod(multi))
+        end
+    end
+
+    push!(blades, prod(basis_vecs))
+    return blades
+end
+
+"""Generate the Cayley table for G(n)"""
+function ncayley(n::Integer)
+    basis = basis_blades(n)
+    cayley = permutedims(
+        [
+            AR.find_prod(α(i), α(j), metric=ones(Int8, n), allowed=basis)
+            for i in basis, j in basis
+        ],
+        [1,2]
+    )
+    ix(k) = findin(basis, [k.index])[1]
+    return hcat([[ix(a) for a in cayley[i,:]] for i in 1:length(basis)]...)
+end
+
+"""Plot the Cayley table for G(n) as a heatmap"""
+function visualise_ncayley(n::Int64; filename="", title="", dims=(2000,2000))
+    data = ncayley(n)
+
+    AR_plot_style = style(
+        background_color=colorant"white",
+        minor_label_color=colorant"white",
+        minor_label_font_size=1px,
+        key_position=:none
+    )
+
+    Gadfly.push_theme(AR_plot_style)
+
+    plt = spy(
+        data,
+        Guide.title(title),
+        Guide.xlabel(nothing),
+        Guide.ylabel(nothing)
+        )
+
+    if filename != ""
+        endswith(filename, ".png") || error("filename must end in .png")
+        x, y = dims
+        img = PNG(filename, x*px, y*px)
+        draw(img, plt)
+    else
+        return plt
+    end
+end
