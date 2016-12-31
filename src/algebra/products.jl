@@ -90,13 +90,15 @@ function find_prod(i::α, j::α; metric=METRIC, allowed=ALLOWED)
     target == components && return α(target, sign)
 
     ordering = Dict([(c,i) for (i,c) in enumerate(target)])
-    current = [ordering[c] for c in components]
-    # >1 as the last element will always be in the correct position!
-    while length(current) > 1
-        sign *= iseven(current[1]) ? -1 : 1
-        shift!(current)
-        new_order = Dict([(j,i) for (i,j) in enumerate(sort(current))])
-        current = [new_order[k] for k in current]
+    original = [ordering[c] for c in components]
+
+    while length(original) > 1
+        k = original[1]
+        if k % 2 == 0; sign *= -1 end
+        shift!(original)
+        for comp in original
+            if comp > k; comp -= 1 end
+        end
     end
 
     return α(target, sign)
@@ -162,13 +164,33 @@ end
 ###################################
 # .: Operations on Vector{ξα}s :. #
 ###################################
-"""The outer product of two arbitrary length vectors, computed as the pairwise
-multiplication of the Cartesian product. (Result is a Vector)"""
-function outer_product(v1::Vector{ξα}, v2::Vector{ξα})
+"""The wedge product of two multi-vectors (symbol is `wedge`)"""
+function ∧(v1::Vector{ξα}, v2::Vector{ξα})
     vec = [p[1] * p[2] for p in Iterators.product(v1, v2)]
-    # Need to then group by α!
     return vcat([g for g in groupby(x -> x.alpha.index, vec)]...)
 end
+
+"""The dot product of two multi-vectors (symbol is `bullet`)"""
+function •(v1::Vector{ξα}, v2::Vector{ξα})
+    product = 0.0
+    sort!(v1, lt=(x,y) -> ix(x.alpha) < ix(y.alpha))
+    sort!(v2, lt=(x,y) -> ix(x.alpha) < ix(y.alpha))
+    shortest = length(v1) < length(v2) ? v1 : v2
+
+    for component in shortest
+        a = component.alpha
+    end
+    # iterate over the shorter and calculate the scalar product of ξs for
+    # matching αs
+    return ξα(α("p"), product)
+end
+
+wedge(v1::Vector{ξα}, v2::Vector{ξα}) = ∧(v1, v2)
+dot(v1::Vector{ξα}, v2::Vector{ξα}) = •(v1, v2)
+full(v1::Vector{ξα}, v2::Vector{ξα}) = vcat([•(v1, v2)], ∧(v1, v2))
+
+# NOTE:: Also defined as the bare product of two multivectors
+*(v1::Vector{ξα}, v2::Vector{ξα}) = vcat([•(v1, v2)], ∧(v1, v2))
 
 
 ################################################################################
