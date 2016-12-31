@@ -6,6 +6,7 @@ Working With The Dynamics Of A Relativistic Fluid
 The code in this repository is a work to calculate with and simulate the dynamics
 of the relativistic fluid theorised by [Dr J.G.Williamson](http://www.gla.ac.uk/schools/engineering/staff/johnwilliamson/).
 
+See [here](notes/examples.md) for examples of how to use this module.
 
 ## algebra
 Types, data structures and functions that are required to implement calculations

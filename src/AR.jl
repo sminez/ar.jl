@@ -73,8 +73,8 @@ export  α, alpha,
 ###########################
 for file_path in [
     "algebra/types.jl",
-    "algebra/operations.jl",
-    "algebra/differential.jl",
+    "algebra/products.jl",
+    "algebra/differentials.jl",
     "utils/visualisation.jl",
     "utils/parse.jl"
     ]
