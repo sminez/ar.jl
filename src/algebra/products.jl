@@ -170,8 +170,8 @@ function ∧(v1::Vector{ξα}, v2::Vector{ξα})
     return vcat([g for g in groupby(x -> x.alpha.index, vec)]...)
 end
 
-"""The dot product of two multi-vectors (symbol is `bullet`)"""
-function •(v1::Vector{ξα}, v2::Vector{ξα})
+"""The dot product of two multi-vectors (symbol is `circ`)"""
+function ∘(v1::Vector{ξα}, v2::Vector{ξα})
     product = 0.0
     sort!(v1, lt=(x,y) -> ix(x.alpha) < ix(y.alpha))
     sort!(v2, lt=(x,y) -> ix(x.alpha) < ix(y.alpha))
@@ -186,11 +186,11 @@ function •(v1::Vector{ξα}, v2::Vector{ξα})
 end
 
 wedge(v1::Vector{ξα}, v2::Vector{ξα}) = ∧(v1, v2)
-dot(v1::Vector{ξα}, v2::Vector{ξα}) = •(v1, v2)
-full(v1::Vector{ξα}, v2::Vector{ξα}) = vcat([•(v1, v2)], ∧(v1, v2))
+dot(v1::Vector{ξα}, v2::Vector{ξα}) = ∘(v1, v2)
+full(v1::Vector{ξα}, v2::Vector{ξα}) = vcat([∘(v1, v2)], ∧(v1, v2))
 
 # NOTE:: Also defined as the bare product of two multivectors
-*(v1::Vector{ξα}, v2::Vector{ξα}) = vcat([•(v1, v2)], ∧(v1, v2))
+*(v1::Vector{ξα}, v2::Vector{ξα}) = vcat([∘(v1, v2)], ∧(v1, v2))
 
 
 ################################################################################
