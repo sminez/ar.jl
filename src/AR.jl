@@ -72,7 +72,8 @@ export  α, alpha,
 # .: Load module files :. #
 ###########################
 for file_path in [
-    "algebra/algebra.jl",
+    "algebra/types.jl",
+    "algebra/operations.jl",
     "algebra/differential.jl",
     "utils/visualisation.jl",
     "utils/parse.jl"
