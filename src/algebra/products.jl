@@ -90,17 +90,27 @@ function find_prod(i::α, j::α; metric=METRIC, allowed=ALLOWED)
     target == components && return α(target, sign)
 
     ordering = Dict([(c,i) for (i,c) in enumerate(target)])
+    current = [ordering[c] for c in components]
+
+    while length(current) > 1
+        sign *= iseven(current[1]) ? -1 : 1
+        shift!(current)
+        new_order = Dict([(j,i) for (i,j) in enumerate(sort(current))])
+        current = [new_order[k] for k in current]
+    end
+
+    #= Alternate version:: not working yet
     original = [ordering[c] for c in components]
 
-    while length(original) > 1
+    while length(original) > 0
         k = original[1]
-        if k % 2 == 0; sign *= -1 end
+        if iseven(k); sign *= -1 end
         shift!(original)
         for comp in original
             if comp > k; comp -= 1 end
         end
     end
-
+    =#
     return α(target, sign)
 end
 

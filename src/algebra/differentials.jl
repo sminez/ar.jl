@@ -103,7 +103,7 @@ function replace_grad(terms::Vector{ξα}, group_name::String,
         end
 
         if length(grad_elements) == 3
-            push!(output, to_del(grad_elements, "∇Ξ$group_name"))
+            push!(output, to_del(grad_elements, "∇Ξ$(term.xi.unit)"))
             filter!(x -> !(x in grad_elements), terms)
         end
     end
@@ -201,13 +201,13 @@ function by_∇(vec::Vector{ξα}, level=1)
 
     for terms in by_α(vec, true)
         for (group, ξs) in ξ_GROUPS
+            (terms, replacements) = replace_curl(terms, group, ξs, level)
+            replacements != [] && append!(output, replacements)
+
             (terms, replacements) = replace_grad(terms, group, ξs, level)
             replacements != [] && append!(output, replacements)
 
             (terms, replacements) = replace_div(terms, group, ξs, level)
-            replacements != [] && append!(output, replacements)
-
-            (terms, replacements) = replace_curl(terms, group, ξs, level)
             replacements != [] && append!(output, replacements)
 
             (terms, replacements) = replace_group_partials(terms, group, ξs, level)
