@@ -12,23 +12,24 @@ const pos_neg_colours = [
     for (a,b,c) in [
         # blues
         (254,217,118), (219,199,143),
-        (49,130,189),(74,119,143),
         (107,174,214),(111,160,176),
-        (158,202,225),(143,181,191),
         # purples
         (165,15,21),(135,46,46),
-        (117,107,177),(118,113,143),
         (158,154,200),(156,142,173),
-        (188,189,220),(180,155,191),
         # reds
         (84,39,143),(76,72,97),
-        (222,45,38),(189,68,66),
         (251,106,74),(214,104,71),
-        (252,146,114),(217,142,102),
         # greens
         (254,178,76),(219,170,86),
-        (49,163,84),(73,140,107),
         (116,196,118),(132,179,148),
+        # muted
+        (49,130,189),(74,119,143),
+        (158,202,225),(143,181,191),
+        (117,107,177),(118,113,143),
+        (188,189,220),(180,155,191),
+        (222,45,38),(189,68,66),
+        (252,146,114),(217,142,102),
+        (49,163,84),(73,140,107),
         (161,217,155),(159,196,160)
     ]
 ]
@@ -81,25 +82,20 @@ __convert_cayley__
 
 Change the α values in CAYLEY into alternate formats for visualisation
 """
-function convert_cayley(output="indices", op=:*, i0=true)
-    if i0
-        allowed = vcat(ALLOWED[1:end-3], ["10", "20", "30"])
-    else
-        allowed = vcat(ALLOWED[1:end-3], ["01", "02", "03"])
-    end
+function convert_cayley(output="indices", op=:*)
     cayley = permutedims(
-        eval(parse("[α(i) $op α(j) for i in $allowed, j in $allowed]")),
+        eval(parse("[α(i) $op α(j) for i in $ALLOWED, j in $ALLOWED]")),
         [1,2]
     )
 
     if output == "indices"
         return cayley
     elseif output == "strindices"
-        return [[a.index for a in cayley[i,:]] for i in 1:16]
+        return [[a.index for a in cayley[i,:]] for i in 1:length(cayley[1,:])]
     elseif output == "colmap"
-        return [[ix(a) for a in cayley[i,:]] for i in 1:16]
+        return [[ix(a) for a in cayley[i,:]] for i in 1:length(cayley[1,:])]
     elseif output == "sign"
-        return [[a.sign for a in cayley[i,:]] for i in 1:16]
+        return [[a.sign for a in cayley[i,:]] for i in 1:length(cayley[1,:])]
     else
         error("Invalid output specification")
     end
@@ -112,11 +108,10 @@ This is a quick and dirty way to print out the Cayley table in
 a couple of different ways so that it can be pasted into excel
 for visualising and looking at properties such as sign and symmetry.
 """
-function print_cayley(output="indices", op=:*, i0=true, headers=true)
-    data = convert_cayley(output, op, i0)
-    # TODO:: fix headers for 0i
+function print_cayley(output="indices", op=:*, headers=true)
+    data = convert_cayley(output, op)
     headers && println(",$(join(CAYLEY[1,:], ","))")
-    for i in 1:16
+    for i in 1:length(data)
         c = data[i,:]
         headers && print("$(CAYLEY[1,i]),")
         println(join([a for a in c]..., ","))
@@ -139,7 +134,7 @@ function visualise_cayley(;muted=true, coloured=true, dims=(2000,2000),
     pal = muted ? MUTED_PALETTE : PALETTE
     # This is the best way I've found to convert an array of n, n-element
     # arrays into a single nxn multi-array.
-    data = hcat(convert_cayley(output)...)
+    data = permutedims(hcat(convert_cayley(output)...), [2,1])
 
     AR_plot_style = style(
         background_color=colorant"white",
