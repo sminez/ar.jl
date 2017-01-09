@@ -21,12 +21,14 @@ const ALLOWED = [
 #        Gn+1 = |Gn   Gn^n |
 #               |Gn^n Gn   |
 #        To build up the table...the sign distribution is...interesting!
-#const ALLOWED = [
-#    "p", "0", "1", "01",
-#    "2", "02", "12", "012",
-#    "3", "03", "13", "013",
-#    "23", "023", "123", "0123"
-#]
+#=
+const ALLOWED = [
+    "p","0","1","01",
+    "2","02","12","012",
+    "3","03","31","031",
+    "23","023","123","0123"
+]
+=#
 const ALLOWED_GROUPS = [Symbol(g) for g in ["p","0","i","i0","jk","0jk","123","0123"]]
 const METRIC = [1 -1 -1 -1]
 

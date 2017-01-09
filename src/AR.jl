@@ -50,6 +50,11 @@ export  α, alpha,
         XiE, ΞE,
         XiG, ΞG,
 
+
+        group_commutator,
+        ring_commutator,
+        ring_anticommutator,
+
         ∂μ, d_mu,
         ∂, partial,
         Dμ, D_mu,
@@ -74,6 +79,7 @@ export  α, alpha,
 for file_path in [
     "algebra/types.jl",
     "algebra/products.jl",
+    "algebra/operators.jl",
     "algebra/differentials.jl",
     "utils/visualisation.jl",
     "utils/parse.jl"
